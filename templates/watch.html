@@ -1,40 +1,19 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ video.title }}</title>
+    <meta charset="UTF-8">
+    <title>動画を見る</title>
 </head>
 <body>
-    <h1>{{ video.title }}</h1>
-
-    <div>
-        {% if "youtube.com" in video.url or "youtu.be" in video.url %}
-            <!-- YouTube -->
-            {% set youtube_id = video.url.split('v=')[-1].split('&')[0] if 'v=' in video.url else video.url.split('/')[-1] %}
-            <iframe width="560" height="315"
-                    src="https://www.youtube.com/embed/{{ youtube_id }}"
-                    frameborder="0" allowfullscreen>
-            </iframe>
-
-        {% elif "nicovideo.jp/watch/" in video.url %}
-            <!-- ニコニコ動画 -->
-            {% set nico_id = video.url.split('/')[-1] %}
-            <iframe width="560" height="315"
-                    src="https://embed.nicovideo.jp/watch/{{ nico_id }}"
-                    frameborder="0" allowfullscreen>
-            </iframe>
-
-        {% elif "web.archive.org" in video.url %}
-            <!-- Wayback Machine -->
-            <iframe width="560" height="315"
-                    src="{{ video.url }}"
-                    frameborder="0" allowfullscreen>
-            </iframe>
-
-        {% else %}
-            <p>この動画URLは埋め込みに対応していません。</p>
-        {% endif %}
-    </div>
-
-    <a href="{{ url_for('index') }}">戻る</a>
+    <h1>動画を見る</h1>
+    {% if video.type == 'url' %}
+        <iframe width="560" height="315" src="{{ video.url | replace('watch?v=', 'embed/') }}" frameborder="0" allowfullscreen></iframe>
+    {% else %}
+        <video width="560" controls>
+            <source src="{{ url_for('static', filename='uploads/' + video.filename) }}">
+            動画を再生できません。
+        </video>
+    {% endif %}
+    <br><a href="{{ url_for('index') }}">← 戻る</a>
 </body>
 </html>
