@@ -1,19 +1,14 @@
-<!DOCTYPE html>
-<html>
-<head><title>動画一覧</title></head>
-<body>
-<h1>ようこそ！</h1>
-{% if session.get("username") %}
-  <p>こんにちは、{{ session["username"] }}さん！ <a href="{{ url_for('logout') }}">ログアウト</a></p>
+<!doctype html>
+<title>動画一覧</title>
+<h1>動画一覧</h1>
+{% if session.username %}
+  <p>ようこそ {{ session.username }} さん！ <a href="{{ url_for('logout') }}">ログアウト</a></p>
 {% else %}
-  <a href="{{ url_for('login') }}">ログイン</a> | <a href="{{ url_for('register') }}">新規登録</a>
+  <p><a href="{{ url_for('user_login') }}">ログイン</a> | <a href="{{ url_for('register') }}">登録</a></p>
 {% endif %}
-
-<h2>動画一覧</h2>
+<a href="{{ url_for('upload') }}">動画投稿</a>
 <ul>
   {% for video in videos %}
-    <li>{{ video["title"] }} - <a href="{{ video["url"] }}">見る</a></li>
+    <li><a href="{{ url_for('watch', video_id=video.id) }}">{{ video.title }}</a>（いいね：{{ video.likes }}）</li>
   {% endfor %}
 </ul>
-</body>
-</html>
