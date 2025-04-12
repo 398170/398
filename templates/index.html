@@ -1,20 +1,24 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>動画共有プラットフォーム</title>
+    <title>トンツーサンキューハチへようこそ</title>
 </head>
 <body>
-    <h1>トンツーサンキューハチへようこそ！</h1> <!-- 追加した部分 -->
-    <h2>アップロードされた動画</h2>
+    <h1>トンツーサンキューハチへようこそ</h1>
+    
+    <form action="/upload" method="post">
+        タイトル: <input type="text" name="title" required><br>
+        動画URL: <input type="url" name="url" required><br>
+        <button type="submit">投稿</button>
+    </form>
+
+    <h2>動画一覧</h2>
     <ul>
         {% for video in videos %}
-            <li><a href="{{ url_for('watch', filename=video) }}">{{ video }}</a></li>
+        <li>
+            <a href="{{ url_for('watch', video_id=loop.index0) }}">{{ video.title }}</a>
+        </li>
         {% endfor %}
     </ul>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
-        <input type="file" name="video" required>
-        <button type="submit">動画をアップロード</button>
-    </form>
 </body>
 </html>
