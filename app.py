@@ -1,10 +1,11 @@
 from flask import Flask, render_template, request, redirect, url_for
 import os
+from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
 # 動画保存用フォルダ設定
-UPLOAD_FOLDER = 'static/uploads'
+UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # アップロード先フォルダを作成（なければ）
@@ -21,7 +22,8 @@ def index():
 def upload():
     file = request.files['video']
     if file:
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], file.filename)
+        filename = secure_filename(file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(filepath)
     return redirect(url_for('index'))
 
@@ -33,4 +35,5 @@ def watch(filename):
 # --- ここは削除！ ---
 # if __name__ == '__main__':
 #     port = int(os.environ.get('PORT', 5000))
+#     app.run(host='0.0.0.0', port=port)
 #     app.run(host='0.0.0.0', port=port)
