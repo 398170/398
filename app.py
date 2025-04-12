@@ -1,38 +1,45 @@
 from flask import Flask, render_template, request, redirect, url_for
+import json
 import os
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
 
-# 動画保存用フォルダ設定
-UPLOAD_FOLDER = os.path.join(app.root_path, 'static', 'uploads')
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+VIDEOS_FILE = 'videos.json'
 
-# アップロード先フォルダを作成（なければ）
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# JSONファイル初期化（なければ作成）
+if not os.path.exists(VIDEOS_FILE):
+    with open(VIDEOS_FILE, 'w') as f:
+        json.dump([], f)
 
-# トップページ（アップロードフォームと動画一覧）
 @app.route('/')
 def index():
-    videos = os.listdir(UPLOAD_FOLDER)
+    with open(VIDEOS_FILE, 'r') as f:
+        videos = json.load(f)
     return render_template('index.html', videos=videos)
 
-# アップロード処理
 @app.route('/upload', methods=['POST'])
 def upload():
-    file = request.files['video']
-    if file:
-        filename = secure_filename(file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-        file.save(filepath)
-    return redirect(url_for('index'))
+    title = request.form['title']
+    url = request.form['url']
+    
+    # サポート対象URLかどうか確認
+    if any(s in url for s in ['youtube.com', 'youtu.be', 'nicovideo.jp', 'web.archive.org']):
+        new_video = {'title': title, 'url': url}
+        with open(VIDEOS_FILE, 'r+') as f:
+            videos = json.load(f)
+            videos.append(new_video)
+            f.seek(0)
+            json.dump(videos, f, indent=2)
+        return redirect(url_for('index'))
+    else:
+        return 'このURLはサポートされていません。'
 
-# 動画再生ページ
-@app.route('/watch/<filename>')
-def watch(filename):
-    return render_template('watch.html', filename=filename)
-
-# --- ここは削除！ ---
-# if __name__ == '__main__':
-#     port = int(os.environ.get('PORT', 5000))
-#     app.run(host='0.0.0.0', port=port)
+@app.route('/watch/<int:video_id>')
+def watch(video_id):
+    with open(VIDEOS_FILE, 'r') as f:
+        videos = json.load(f)
+    if 0 <= video_id < len(videos):
+        video = videos[video_id]
+        return render_template('watch.html', video=video)
+    else:
+        return '動画が見つかりません。'
