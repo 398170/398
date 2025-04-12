@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>-.398 動画一覧</title>
+</head>
+<body>
+    <h1>-.398（トンツーサンキューハチ）へようこそ！</h1>
+    <form action="/upload" method="POST" enctype="multipart/form-data">
+        <input type="file" name="video" accept="video/*" required>
+        <button type="submit">アップロード</button>
+    </form>
+    <h2>投稿された動画</h2>
+    <ul>
+        {% for video in videos %}
+            <li><a href="{{ url_for('watch', filename=video) }}">{{ video }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
