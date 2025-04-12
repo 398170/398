@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>{{ video.title }}</title>
+</head>
+<body>
+    <h1>{{ video.title }}</h1>
+    <iframe width="560" height="315" src="{{ video.url }}" frameborder="0" allowfullscreen></iframe>
+    <p>いいね: {{ video.likes }} <a href="{{ url_for('like', video_id=video.id) }}">[いいね]</a></p>
+
+    <h3>コメント</h3>
+    <form method="post">
+        <textarea name="comment"></textarea><br>
+        <input type="submit" value="コメントを投稿">
+    </form>
+
+    {% for comment in comments %}
+        <p><strong>{{ comment.username }}</strong>: {{ comment.text }}</p>
+    {% endfor %}
+
+    <p><a href="{{ url_for('index') }}">一覧へ戻る</a></p>
+</body>
+</html>
