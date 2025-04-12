@@ -1,15 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>動画を投稿する</title>
-</head>
-<body>
-    <h1>動画投稿</h1>
-    <form method="post">
-        タイトル: <input type="text" name="title"><br>
-        動画URL: <input type="text" name="url"><br>
-        <input type="submit" value="投稿">
-    </form>
-    <p><a href="{{ url_for('index') }}">戻る</a></p>
-</body>
-</html>
+<!doctype html>
+<title>動画投稿</title>
+<h1>動画を投稿</h1>
+<form method="post">
+  タイトル: <input name="title" required><br>
+  動画URL: <input name="url" required><br>
+  <input type="submit" value="投稿">
+</form>
+<p><a href="{{ url_for('index') }}">← 戻る</a></p>
