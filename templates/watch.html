@@ -1,17 +1,18 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>動画再生</title>
+    <title>{{ video.title }}</title>
 </head>
 <body>
-    <h1>トンツーサンキューハチへようこそ！</h1> <!-- 追加した部分 -->
-    <h2>動画再生</h2>
-    <video controls>
-        <source src="{{ url_for('static', filename='uploads/' + filename) }}" type="video/mp4">
-        お使いのブラウザは動画をサポートしていません。
-    </video>
-    <br>
-    <a href="/">戻る</a>
+    <h1>{{ video.title }}</h1>
+
+    <div>
+        <iframe width="560" height="315" 
+                src="{{ video.url | replace('watch?v=', 'embed/') | replace('https://www.nicovideo.jp/watch/', 'https://embed.nicovideo.jp/watch/') }}" 
+                frameborder="0" allowfullscreen>
+        </iframe>
+    </div>
+
+    <a href="{{ url_for('index') }}">戻る</a>
 </body>
 </html>
