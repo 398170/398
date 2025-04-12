@@ -1,15 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>管理者ログイン</title>
-</head>
-<body>
-    <h1>管理者ログイン</h1>
-    <form method="post">
-        管理者名: <input type="text" name="username"><br>
-        パスワード: <input type="password" name="password"><br>
-        <input type="submit" value="ログイン">
-    </form>
-    <p><a href="{{ url_for('index') }}">戻る</a></p>
-</body>
-</html>
+<!doctype html>
+<title>管理者ログイン</title>
+<h1>管理者ログイン</h1>
+<form method="post">
+  ユーザー名: <input name="username" required><br>
+  パスワード: <input name="password" type="password" required><br>
+  <input type="submit" value="ログイン">
+</form>
+<p><a href="{{ url_for('index') }}">← 戻る</a></p>
