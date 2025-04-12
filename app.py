@@ -30,7 +30,7 @@ def upload():
 def watch(filename):
     return render_template('watch.html', filename=filename)
 
-# Railway対応（ポートを環境変数から取得）
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+# --- ここは削除！ ---
+# if __name__ == '__main__':
+#     port = int(os.environ.get('PORT', 5000))
+#     app.run(host='0.0.0.0', port=port)
