@@ -1,111 +1,45 @@
 from flask import Flask, render_template, request, redirect, url_for, session
-import json, os
-from werkzeug.security import generate_password_hash, check_password_hash
+import os, json, subprocess
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
-app.secret_key = 'supersecretkey'  # セッション管理のためのシークレットキー
+app.secret_key = 'secretkey'  # セッション用
 
-# フォルダ設定
 UPLOAD_FOLDER = 'static/uploads'
 THUMBNAIL_FOLDER = 'static/thumbnails'
+HLS_FOLDER = 'static/hls'
 VIDEO_DB = 'videos.json'
-USER_DB = 'users.json'
+USERS_DB = 'users.json'
+COMMENTS_DB = 'comments.json'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# フォルダ作成（なければ）
+# フォルダ作成
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
+os.makedirs(HLS_FOLDER, exist_ok=True)
 
 # JSON初期化
-if not os.path.exists(VIDEO_DB):
-    with open(VIDEO_DB, 'w') as f:
-        json.dump([], f)
+for db in [VIDEO_DB, USERS_DB, COMMENTS_DB]:
+    if not os.path.exists(db):
+        with open(db, 'w') as f:
+            json.dump([], f)
 
-if not os.path.exists(USER_DB):
-    with open(USER_DB, 'w') as f:
-        json.dump([], f)
+# --------------------------------
+# ルーティング
+# --------------------------------
 
-# ユーザー用クラス
-class User:
-    def __init__(self, id, username, password, is_admin=False):
-        self.id = id
-        self.username = username
-        self.password = password
-        self.is_admin = is_admin
-
-# トップページ
 @app.route('/')
 def index():
     with open(VIDEO_DB, 'r') as f:
         videos = json.load(f)
     return render_template('index.html', videos=videos)
 
-# ユーザー登録ページ
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        is_admin = request.form.get('is_admin', False)
-
-        hashed_password = generate_password_hash(password, method='sha256')
-
-        # 新しいユーザーを登録
-        with open(USER_DB, 'r') as f:
-            users = json.load(f)
-
-        new_user = {
-            'id': len(users) + 1,  # ユーザーIDは単純にデータベースの長さで決める
-            'username': username,
-            'password': hashed_password,
-            'is_admin': is_admin
-        }
-
-        users.append(new_user)
-
-        with open(USER_DB, 'w') as f:
-            json.dump(users, f, indent=2)
-
-        return redirect(url_for('login'))
-
-    return render_template('register.html')
-
-# ログインページ
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-
-        # ユーザー情報をデータベースから取得
-        with open(USER_DB, 'r') as f:
-            users = json.load(f)
-
-        user = next((u for u in users if u['username'] == username), None)
-
-        if user and check_password_hash(user['password'], password):
-            # ユーザーが見つかり、パスワードが正しければ
-            session['user_id'] = user['id']
-            session['username'] = user['username']
-            session['is_admin'] = user['is_admin']
-
-            return redirect(url_for('index'))
-
-        return 'ログイン失敗'
-
-    return render_template('login.html')
-
-# ログアウト処理
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('index'))
-
-# 動画アップロード
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
@@ -117,13 +51,20 @@ def upload():
             upload_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(upload_path)
 
-            # サムネイル作成
+            # サムネイル生成
             thumbnail_filename = basename + '.jpg'
             thumbnail_path = os.path.join(THUMBNAIL_FOLDER, thumbnail_filename)
+            subprocess.run(['ffmpeg', '-i', upload_path, '-ss', '00:00:01.000', '-vframes', '1', thumbnail_path],
+                           stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+
+            # HLS変換
+            hls_output_dir = os.path.join(HLS_FOLDER, basename)
+            os.makedirs(hls_output_dir, exist_ok=True)
             subprocess.run([
                 'ffmpeg', '-i', upload_path,
-                '-ss', '00:00:01.000', '-vframes', '1',
-                thumbnail_path
+                '-codec:', 'copy', '-start_number', '0',
+                '-hls_time', '10', '-hls_list_size', '0', '-f', 'hls',
+                os.path.join(hls_output_dir, 'playlist.m3u8')
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
             # 保存
@@ -133,8 +74,9 @@ def upload():
             videos.append({
                 'title': title,
                 'description': description,
-                'filename': filename,
-                'thumbnail': thumbnail_filename
+                'thumbnail': thumbnail_filename,
+                'hls_path': f"{basename}/playlist.m3u8",
+                'uploader': session['username']
             })
 
             with open(VIDEO_DB, 'w') as f:
@@ -144,39 +86,106 @@ def upload():
 
     return render_template('upload.html')
 
-# 動画削除（管理者用）
-@app.route('/delete_video/<int:video_id>', methods=['POST'])
-def delete_video(video_id):
-    # 管理者だけが削除できるように確認
-    if not session.get('is_admin'):
-        return '管理者権限が必要です', 403
-
-    # 動画削除の処理（例：動画IDで削除）
+@app.route('/video/<int:index>', methods=['GET', 'POST'])
+def video(index):
     with open(VIDEO_DB, 'r') as f:
         videos = json.load(f)
 
-    video_to_delete = next((v for v in videos if v['id'] == video_id), None)
+    with open(COMMENTS_DB, 'r') as f:
+        comments = json.load(f)
 
-    if video_to_delete:
-        videos.remove(video_to_delete)
+    video = videos[index]
+    video_comments = [c for c in comments if c['video_index'] == index]
 
+    if request.method == 'POST':
+        if 'username' not in session:
+            return redirect(url_for('login'))
+        comment = request.form['comment']
+        comments.append({
+            'video_index': index,
+            'user': session['username'],
+            'text': comment
+        })
+        with open(COMMENTS_DB, 'w') as f:
+            json.dump(comments, f, indent=2)
+        return redirect(url_for('video', index=index))
+
+    return render_template('video.html', video=video, index=index, comments=video_comments)
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        with open(USERS_DB, 'r') as f:
+            users = json.load(f)
+
+        for user in users:
+            if user['username'] == username and user['password'] == password:
+                session['username'] = username
+                session['is_admin'] = user.get('is_admin', False)
+                return redirect(url_for('index'))
+
+    return render_template('login.html')
+
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        is_admin = 'is_admin' in request.form
+
+        with open(USERS_DB, 'r') as f:
+            users = json.load(f)
+
+        users.append({'username': username, 'password': password, 'is_admin': is_admin})
+
+        with open(USERS_DB, 'w') as f:
+            json.dump(users, f, indent=2)
+
+        return redirect(url_for('login'))
+
+    return render_template('register.html')
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('index'))
+
+@app.route('/delete_video/<int:index>')
+def delete_video(index):
+    if not session.get('is_admin'):
+        return "管理者のみ削除可能", 403
+
+    with open(VIDEO_DB, 'r') as f:
+        videos = json.load(f)
+
+    if index < len(videos):
+        del videos[index]
         with open(VIDEO_DB, 'w') as f:
             json.dump(videos, f, indent=2)
 
-        return redirect(url_for('index'))
-    
-    return '動画が見つかりませんでした', 404
+    return redirect(url_for('index'))
 
-# 管理者用動画一覧表示
-@app.route('/admin')
-def admin():
+@app.route('/delete_comment/<int:index>')
+def delete_comment(index):
     if not session.get('is_admin'):
-        return redirect(url_for('index'))
+        return "管理者のみ削除可能", 403
 
-    with open(VIDEO_DB, 'r') as f:
-        videos = json.load(f)
-    return render_template('admin.html', videos=videos)
+    with open(COMMENTS_DB, 'r') as f:
+        comments = json.load(f)
 
-# サーバー起動
+    if index < len(comments):
+        del comments[index]
+        with open(COMMENTS_DB, 'w') as f:
+            json.dump(comments, f, indent=2)
+
+    return redirect(url_for('index'))
+
+# --------------------------------
+# Render 対応のポートバインド
+# --------------------------------
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
