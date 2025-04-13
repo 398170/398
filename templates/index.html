@@ -1,19 +1,38 @@
 <!DOCTYPE html>
 <html lang="ja">
-<>
+<head>
   <meta charset="UTF-8">
-  <title>トンツーサンキューハチ</title>
+  <title>トンツーサンキューハチへようこそ！</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>アップロードされた動画一覧</h1>
-  {% for video in videos %}
-    <div>
-      <h2>{{ video.title }}</h2>
-      <p>{{ video.description }}</p>
-      <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="200">
-      <video src="{{ url_for('static', filename='uploads/' + video.filename) }}" controls width="400"></video>
-    </div>
-  {% endfor %}
+  <h1>トンツーサンキューハチへようこそ！</h1>
+  <p>これは自作動画共有サイトのトップページです！</p>
+
+  <!-- アップロードボタン -->
+  <p>
+    <a href="{{ url_for('upload') }}">
+      <button>動画をアップロードする</button>
+    </a>
+  </p>
+
+  <!-- 動画一覧表示 -->
+  {% if videos %}
+    <h2>投稿された動画</h2>
+    <ul>
+      {% for video in videos %}
+        <li>
+          <h3>{{ video.title }}</h3>
+          <p>{{ video.description }}</p>
+          <video width="320" controls>
+            <source src="{{ url_for('static', filename='uploads/' ~ video.filename) }}" type="video/mp4">
+            お使いのブラウザは動画タグに対応していません。
+          </video>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>まだ動画は投稿されていません。</p>
+  {% endif %}
 </body>
 </html>
-
