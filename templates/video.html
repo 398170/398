@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>{{ video.title }}</title>
+    <title>{{ video.title }} - 動画視聴</title>
 </head>
 <body>
     <h1>{{ video.title }}</h1>
@@ -9,16 +9,17 @@
 
     <video width="640" controls>
         <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
-        このブラウザは HLS をサポートしていません。
+        お使いのブラウザはHLSをサポートしていません。
     </video>
 
+    <hr>
     <h3>コメント</h3>
     <ul>
         {% for comment in comments %}
             <li>
                 <strong>{{ comment.user }}:</strong> {{ comment.text }}
                 {% if session.is_admin %}
-                    <a href="{{ url_for('delete_comment', index=loop.index0) }}">[削除]</a>
+                    <a href="{{ url_for('delete_comment', index=loop.index0, video_id=video_id) }}">[削除]</a>
                 {% endif %}
             </li>
         {% endfor %}
@@ -26,13 +27,21 @@
 
     {% if session.username %}
     <form method="post">
-        <textarea name="comment" required></textarea><br>
-        <button type="submit">コメントする</button>
+        <textarea name="comment" rows="4" cols="40" required></textarea><br>
+        <button type="submit">コメント投稿</button>
     </form>
     {% else %}
         <p><a href="{{ url_for('login') }}">ログイン</a>するとコメントできます。</p>
     {% endif %}
 
-    <p><a href="{{ url_for('index') }}">戻る</a></p>
+    {% if session.is_admin %}
+        <hr>
+        <form action="{{ url_for('delete_video', video_id=video_id) }}" method="post" onsubmit="return confirm('本当にこの動画を削除しますか？');">
+            <button type="submit">この動画を削除</button>
+        </form>
+    {% endif %}
+
+    <hr>
+    <p><a href="{{ url_for('index') }}">トップに戻る</a></p>
 </body>
 </html>
