@@ -2,36 +2,63 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>動画一覧</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
     <h1>動画一覧</h1>
-    <a href="{{ url_for('upload') }}">＋ 動画をアップロード</a>
-    <hr>
-    {% for video in videos %}
-        <div style="margin-bottom: 40px;">
-            <h2>{{ video.title }}</h2>
-            <p>{{ video.description }}</p>
-            <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" alt="サムネイル" width="320"><br><br>
 
-            <video id="video_{{ loop.index }}" width="640" controls></video>
-            <script>
-                const video = document.getElementById("video_{{ loop.index }}");
-                const videoSrc = "{{ url_for('static', filename='hls/' + video.hls_path) }}";
-                if (Hls.isSupported()) {
-                    const hls = new Hls();
-                    hls.loadSource(videoSrc);
-                    hls.attachMedia(video);
-                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-                    video.src = videoSrc;
-                } else {
-                    video.outerHTML = "<p>お使いのブラウザではこの動画を再生できません。</p>";
-                }
-            </script>
-        </div>
-        <hr>
-    {% endfor %}
+    {% if current_user.is_authenticated %}
+        <p>ようこそ、{{ current_user.username }}さん！ <a href="{{ url_for('logout') }}">ログアウト</a></p>
+        {% if current_user.is_admin %}
+            <a href="{{ url_for('upload') }}">動画をアップロード</a>
+        {% endif %}
+    {% else %}
+        <a href="{{ url_for('login') }}">ログイン</a> | 
+        <a href="{{ url_for('register') }}">新規登録</a>
+    {% endif %}
+    
+    <div>
+        {% for video in videos %}
+            <div>
+                <h2>{{ video.title }}</h2>
+                <p>{{ video.description }}</p>
+                <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" alt="サムネイル">
+                <video width="320" height="240" controls>
+                    <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
+                    お使いのブラウザはHLSに対応していません。
+                </video>
+                
+                <!-- コメントセクション -->
+                <h3>コメント</h3>
+                <ul>
+                    {% for comment in video.comments %}
+                        <li>
+                            <strong>{{ comment.user }}</strong>: {{ comment.text }}
+                            {% if current_user.is_authenticated and current_user.is_admin %}
+                                <form action="{{ url_for('delete_comment', video_id=video.id, comment_user=comment.user) }}" method="POST" style="display:inline;">
+                                    <button type="submit">削除</button>
+                                </form>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                </ul>
+
+                {% if current_user.is_authenticated %}
+                    <form action="{{ url_for('comment', video_id=video.id) }}" method="POST">
+                        <textarea name="comment" placeholder="コメントを入力"></textarea>
+                        <button type="submit">コメント</button>
+                    </form>
+                {% endif %}
+                
+                {% if current_user.is_authenticated and current_user.is_admin %}
+                    <form action="{{ url_for('delete_video', video_id=video.id) }}" method="POST" style="margin-top: 10px;">
+                        <button type="submit">動画を削除</button>
+                    </form>
+                {% endif %}
+            </div>
+            <hr>
+        {% endfor %}
+    </div>
 </body>
 </html>
