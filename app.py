@@ -1,4 +1,10 @@
-from flask import session
+from flask import Flask, render_template, request, redirect, url_for, session
+import os, json
+
+app = Flask(__name__)
+app.secret_key = 'your_secret_key'  # セッションに必要
+
+VIDEO_DB = 'videos.json'
 
 @app.route('/video/<int:video_id>', methods=['GET', 'POST'])
 def view_video(video_id):
