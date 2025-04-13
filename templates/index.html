@@ -1,12 +1,21 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>トンツーサンキューハチへようこそ！</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <meta charset="UTF-8">
+    <title>トンツーサンキューハチ - 動画一覧</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>トンツーサンキューハチへようこそ！</h1>
-  <p>これは自作動画共有サイトのトップページです！</p>
+    <h1>動画一覧</h1>
+    <ul>
+        {% for video in videos %}
+            <li>
+                <a href="{{ url_for('watch', video_id=loop.index0) }}">{{ video['title'] }}</a>
+                <p>{{ video['description'] }}</p>
+            </li>
+        {% endfor %}
+    </ul>
+    <br>
+    <a href="{{ url_for('upload') }}">動画のアップロード</a>
 </body>
 </html>
