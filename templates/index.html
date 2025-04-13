@@ -1,22 +1,23 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-    <title>-.398 HLS動画一覧</title>
+    <meta charset="UTF-8">
+    <title>動画一覧</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>-.398 - 動画一覧</h1>
-    <a href="{{ url_for('upload') }}">＋ アップロード</a>
+    <h1>動画一覧</h1>
+    <a href="{{ url_for('upload') }}">＋ 動画をアップロード</a>
     <hr>
-
     {% for video in videos %}
         <div style="margin-bottom: 40px;">
             <h2>{{ video.title }}</h2>
             <p>{{ video.description }}</p>
-            <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="240"><br><br>
-
-            <video width="480" height="270" controls>
+            <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" alt="サムネイル" width="320"><br><br>
+            
+            <video width="640" controls>
                 <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
-                お使いのブラウザはHLSをサポートしていません。
+                このブラウザは HLS をサポートしていません。
             </video>
         </div>
         <hr>
