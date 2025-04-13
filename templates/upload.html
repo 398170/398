@@ -1,15 +1,25 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>動画アップロード</title>
+    <meta charset="UTF-8">
+    <title>動画アップロード</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-  <h1>動画をアップロード</h1>
-  <form method="POST" enctype="multipart/form-data">
-    <label for="file">動画ファイルを選択:</label>
-    <input type="file" name="file" id="file" required>
-    <button type="submit">アップロード</button>
-  </form>
+    <h1>動画アップロード</h1>
+    <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
+        <label for="title">タイトル:</label>
+        <input type="text" name="title" required><br><br>
+
+        <label for="description">説明:</label>
+        <textarea name="description" required></textarea><br><br>
+
+        <label for="video">動画ファイル:</label>
+        <input type="file" name="video" accept="video/mp4" required><br><br>
+
+        <button type="submit">アップロード</button>
+    </form>
+    <br>
+    <a href="{{ url_for('index') }}">動画一覧へ戻る</a>
 </body>
 </html>
