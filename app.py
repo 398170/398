@@ -14,6 +14,7 @@ if not os.path.exists(VIDEO_DB):
 
 @app.route('/')
 def index():
+    # 動画リストを読み込み
     with open(VIDEO_DB, 'r') as f:
         videos = json.load(f)
     return render_template('index.html', videos=videos)
@@ -43,3 +44,16 @@ def upload():
             return redirect(url_for('index'))
 
     return render_template('upload.html')
+
+@app.route('/watch/<int:video_id>')
+def watch(video_id):
+    # 動画情報を読み込み
+    with open(VIDEO_DB, 'r') as f:
+        videos = json.load(f)
+
+    # 指定されたIDの動画を取得
+    video = videos[video_id]
+    return render_template('watch.html', video=video)
+
+if __name__ == '__main__':
+    app.run(debug=True)
