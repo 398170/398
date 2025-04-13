@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>動画一覧</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
     <h1>動画一覧</h1>
@@ -14,11 +15,21 @@
             <h2>{{ video.title }}</h2>
             <p>{{ video.description }}</p>
             <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" alt="サムネイル" width="320"><br><br>
-            
-            <video width="640" controls>
-                <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
-                このブラウザは HLS をサポートしていません。
-            </video>
+
+            <video id="video_{{ loop.index }}" width="640" controls></video>
+            <script>
+                const video = document.getElementById("video_{{ loop.index }}");
+                const videoSrc = "{{ url_for('static', filename='hls/' + video.hls_path) }}";
+                if (Hls.isSupported()) {
+                    const hls = new Hls();
+                    hls.loadSource(videoSrc);
+                    hls.attachMedia(video);
+                } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+                    video.src = videoSrc;
+                } else {
+                    video.outerHTML = "<p>お使いのブラウザではこの動画を再生できません。</p>";
+                }
+            </script>
         </div>
         <hr>
     {% endfor %}
