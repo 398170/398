@@ -11,12 +11,12 @@ VIDEO_DB = 'videos.json'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
-# フォルダ作成（なければ）
+# 必要なフォルダを作成
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
 os.makedirs(HLS_FOLDER, exist_ok=True)
 
-# JSON初期化
+# JSONファイルを初期化（なければ）
 if not os.path.exists(VIDEO_DB):
     with open(VIDEO_DB, 'w') as f:
         json.dump([], f)
@@ -62,7 +62,7 @@ def upload():
                 os.path.join(hls_output_dir, 'playlist.m3u8')
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
-            # 保存
+            # 動画情報をJSONに保存
             with open(VIDEO_DB, 'r') as f:
                 videos = json.load(f)
 
@@ -79,3 +79,9 @@ def upload():
             return redirect(url_for('index'))
 
     return render_template('upload.html')
+
+
+# Render対応のポートバインド
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
