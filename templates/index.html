@@ -1,10 +1,19 @@
-{% for video in videos %}
-  <div>
-    <h3>{{ video.title }}</h3>
-    <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" alt="Thumbnail" width="320">
-    <p>{{ video.description }}</p>
-    <video width="320" controls>
-      <source src="{{ url_for('static', filename='uploads/' + video.filename) }}">
-    </video>
-  </div>
-{% endfor %}
+<!-- templates/index.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>トンツーサンキューハチ</title>
+</head>
+<body>
+  <h1>アップロードされた動画一覧</h1>
+  {% for video in videos %}
+    <div>
+      <h2>{{ video.title }}</h2>
+      <p>{{ video.description }}</p>
+      <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="200">
+      <video src="{{ url_for('static', filename='uploads/' + video.filename) }}" controls width="400"></video>
+    </div>
+  {% endfor %}
+</body>
+</html>
