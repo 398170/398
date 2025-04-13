@@ -1,0 +1,19 @@
+<!-- templates/watch.html -->
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ video['title'] }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>{{ video['title'] }}</h1>
+    <p>{{ video['description'] }}</p>
+    <video controls>
+        <source src="{{ url_for('static', filename='uploads/' + video['filename']) }}" type="video/mp4">
+        お使いのブラウザはvideoタグに対応していません。
+    </video>
+    <br>
+    <a href="{{ url_for('index') }}">戻る</a>
+</body>
+</html>
