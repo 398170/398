@@ -1,25 +1,18 @@
-{% extends 'layout.html' %}
-{% block content %}
-<h1>{{ video.title }}</h1>
-<p>{{ video.description }}</p>
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ video.title }}</title>
+</head>
+<body>
+    <h1>{{ video.title }}</h1>
+    <p>{{ video.description }}</p>
+    <video controls>
+        <source src="{{ url_for('static', filename='uploads/' + video.filename) }}" type="video/mp4">
+        お使いのブラウザは動画タグに対応していません。
+    </video><br>
 
-<video width="640" height="360" controls>
-  <source src="{{ url_for('static', filename='videos/' + video.filename) }}" type="video/mp4">
-</video>
-
-<h2>コメント</h2>
-<ul>
-  {% for comment in comments %}
-    <li><strong>{{ comment.user }}</strong>: {{ comment.text }}</li>
-  {% endfor %}
-</ul>
-
-{% if 'username' in session %}
-<form method="post">
-  <textarea name="comment" required></textarea><br>
-  <button type="submit">コメント投稿</button>
-</form>
-{% else %}
-<p>コメントを投稿するにはログインが必要です。</p>
-{% endif %}
-{% endblock %}
+    <a href="{{ url_for('index') }}">戻る</a>
+</body>
+</html>
