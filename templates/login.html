@@ -2,11 +2,13 @@
 
 {% block content %}
 <h2>ログイン</h2>
-<form method="post" action="/login">
-  <label>ユーザー名:</label><br>
-  <input type="text" name="username" required><br>
-  <label>パスワード:</label><br>
-  <input type="password" name="password" required><br><br>
-  <input type="submit" value="ログイン">
+<form method="post">
+    <label for="username">ユーザー名:</label>
+    <input type="text" name="username" required><br>
+
+    <label for="password">パスワード:</label>
+    <input type="password" name="password" required><br>
+
+    <input type="submit" value="ログイン">
 </form>
 {% endblock %}
