@@ -1,12 +1,14 @@
 {% extends "layout.html" %}
 
 {% block content %}
-<h2>新規登録</h2>
-<form method="post" action="/register">
-  <label>ユーザー名:</label><br>
-  <input type="text" name="username" required><br>
-  <label>パスワード:</label><br>
-  <input type="password" name="password" required><br><br>
-  <input type="submit" value="登録">
+<h2>新規ユーザー登録</h2>
+<form method="post">
+    <label for="username">ユーザー名:</label>
+    <input type="text" name="username" required><br>
+
+    <label for="password">パスワード:</label>
+    <input type="password" name="password" required><br>
+
+    <input type="submit" value="登録">
 </form>
 {% endblock %}
