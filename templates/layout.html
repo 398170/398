@@ -2,31 +2,41 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}-.398{% endblock %}</title>
+    <title>-.398 動画共有サイト</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
     <header>
         <h1><a href="{{ url_for('index') }}">-.398</a></h1>
-        {% if current_user.is_authenticated %}
-            ようこそ、{{ current_user.username }} さん |
-            <a href="{{ url_for('logout') }}">ログアウト</a>
-        {% else %}
-            <a href="{{ url_for('login') }}">ログイン</a> |
-            <a href="{{ url_for('register') }}">新規登録</a>
-        {% endif %}
-        | <a href="{{ url_for('upload') }}">動画アップロード</a>
+        <nav>
+            <ul>
+                {% if session.username %}
+                    <li>ようこそ、{{ session.username }} さん</li>
+                    <li><a href="{{ url_for('upload') }}">動画を投稿</a></li>
+                    <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
+                {% else %}
+                    <li><a href="{{ url_for('login') }}">ログイン</a></li>
+                    <li><a href="{{ url_for('register') }}">新規登録</a></li>
+                {% endif %}
+            </ul>
+        </nav>
     </header>
-    <hr>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
-    {% block content %}{% endblock %}
+
+    <main>
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for message in messages %}
+                        <li>{{ message }}</li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+        <p>&copy; 2025 -.398 Sakkin</p>
+    </footer>
 </body>
 </html>
