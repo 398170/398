@@ -1,47 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>{{ video.title }} - 動画視聴</title>
-</head>
-<body>
-    <h1>{{ video.title }}</h1>
-    <p>{{ video.description }}</p>
+{% extends "layout.html" %}
+{% block title %}{{ video.title }}{% endblock %}
+{% block content %}
+<h2>{{ video.title }}</h2>
+<p>{{ video.description }}</p>
+<video width="640" controls>
+    <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
+    対応していないブラウザです。
+</video>
 
-    <video width="640" controls>
-        <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
-        お使いのブラウザはHLSをサポートしていません。
-    </video>
+<h3>コメント</h3>
+<ul>
+    {% for comment in comments %}
+    <li><strong>{{ comment.user }}</strong>: {{ comment.text }}</li>
+    {% endfor %}
+</ul>
 
-    <hr>
-    <h3>コメント</h3>
-    <ul>
-        {% for comment in comments %}
-            <li>
-                <strong>{{ comment.user }}:</strong> {{ comment.text }}
-                {% if session.is_admin %}
-                    <a href="{{ url_for('delete_comment', index=loop.index0, video_id=video_id) }}">[削除]</a>
-                {% endif %}
-            </li>
-        {% endfor %}
-    </ul>
+{% if current_user.is_authenticated %}
+<form method="post">
+    <textarea name="comment" placeholder="コメントを入力"></textarea><br>
+    <input type="submit" value="コメント投稿">
+</form>
+{% else %}
+<p><a href="{{ url_for('login') }}">ログイン</a>するとコメントできます。</p>
+{% endif %}
 
-    {% if session.username %}
-    <form method="post">
-        <textarea name="comment" rows="4" cols="40" required></textarea><br>
-        <button type="submit">コメント投稿</button>
+{% if current_user.is_authenticated and current_user.is_admin %}
+    <form method="POST" action="{{ url_for('delete_video', video_id=video_id) }}">
+        <button type="submit">この動画を削除する</button>
     </form>
-    {% else %}
-        <p><a href="{{ url_for('login') }}">ログイン</a>するとコメントできます。</p>
-    {% endif %}
-
-    {% if session.is_admin %}
-        <hr>
-        <form action="{{ url_for('delete_video', video_id=video_id) }}" method="post" onsubmit="return confirm('本当にこの動画を削除しますか？');">
-            <button type="submit">この動画を削除</button>
-        </form>
-    {% endif %}
-
-    <hr>
-    <p><a href="{{ url_for('index') }}">トップに戻る</a></p>
-</body>
-</html>
+{% endif %}
+{% endblock %}
