@@ -1,29 +1,25 @@
-{% extends "layout.html" %}
-
-{% block title %}{{ video.title }} | -398{% endblock %}
-
+{% extends 'layout.html' %}
 {% block content %}
-<h2>{{ video.title }}</h2>
+<h1>{{ video.title }}</h1>
 <p>{{ video.description }}</p>
 
-<video controls width="640">
-    <source src="{{ url_for('static', filename='uploads/' + video.filename) }}" type="video/mp4">
-    対応する動画プレイヤーがありません。
+<video width="640" height="360" controls>
+  <source src="{{ url_for('static', filename='videos/' + video.filename) }}" type="video/mp4">
 </video>
 
-<h3>コメント</h3>
+<h2>コメント</h2>
 <ul>
-    {% for comment in comments %}
-        <li><strong>{{ comment.user }}:</strong> {{ comment.text }}</li>
-    {% endfor %}
+  {% for comment in comments %}
+    <li><strong>{{ comment.user }}</strong>: {{ comment.text }}</li>
+  {% endfor %}
 </ul>
 
-{% if session.get('username') %}
+{% if 'username' in session %}
 <form method="post">
-    <textarea name="comment" placeholder="コメントを入力..."></textarea><br>
-    <input type="submit" value="投稿">
+  <textarea name="comment" required></textarea><br>
+  <button type="submit">コメント投稿</button>
 </form>
 {% else %}
-<p><a href="{{ url_for('login') }}">ログイン</a>するとコメントできます。</p>
+<p>コメントを投稿するにはログインが必要です。</p>
 {% endif %}
 {% endblock %}
