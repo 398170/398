@@ -41,6 +41,17 @@ def index():
     videos = load_videos()
     return render_template('index.html', videos=videos)
 
+# 動画詳細ページ
+@app.route('/video/<int:video_id>')
+def video(video_id):
+    videos = load_videos()
+    if video_id < len(videos):
+        video = videos[video_id]
+        return render_template('video.html', video=video)
+    else:
+        flash('動画が見つかりません')
+        return redirect(url_for('index'))
+
 # ユーザー登録
 @app.route('/register', methods=['GET', 'POST'])
 def register():
