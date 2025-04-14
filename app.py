@@ -8,21 +8,18 @@ app.secret_key = 'your_secret_key'
 VIDEO_DATA_FILE = 'videos.json'
 USER_DATA_FILE = 'users.json'
 
-# 動画情報を読み込み
 def load_videos():
     if not os.path.exists(VIDEO_DATA_FILE):
         return []
     with open(VIDEO_DATA_FILE, 'r') as f:
         return json.load(f)
 
-# ユーザー情報を読み込み
 def load_users():
     if not os.path.exists(USER_DATA_FILE):
         return {}
     with open(USER_DATA_FILE, 'r') as f:
         return json.load(f)
 
-# ユーザー情報を保存
 def save_users(users):
     with open(USER_DATA_FILE, 'w') as f:
         json.dump(users, f)
@@ -67,37 +64,7 @@ def logout():
     flash('ログアウトしました')
     return redirect(url_for('index'))
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload():
-    if 'username' not in session:
-        flash('ログインしてください')
-        return redirect(url_for('login'))
-
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        file = request.files['video']
-
-        if file and file.filename.endswith('.mp4'):
-            # ファイル保存先を確保
-            if not os.path.exists('static/uploads'):
-                os.makedirs('static/uploads')
-            filename = file.filename
-            save_path = os.path.join('static', 'uploads', filename)
-            file.save(save_path)
-
-            # 動画情報を保存
-            videos = load_videos()
-            videos.append({'title': title, 'description': description, 'filename': filename})
-            with open(VIDEO_DATA_FILE, 'w') as f:
-                json.dump(videos, f)
-
-            flash('動画をアップロードしました')
-            return redirect(url_for('index'))
-        else:
-            flash('mp4ファイルをアップロードしてください')
-
-    return render_template('upload.html')
-
+# Render用にポートとホストを指定して起動
 if __name__ == '__main__':
-    app.run(debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(debug=True, host='0.0.0.0', port=port)
