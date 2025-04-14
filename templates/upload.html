@@ -1,11 +1,13 @@
 {% extends "layout.html" %}
-{% block title %}動画アップロード{% endblock %}
+
+{% block title %}動画アップロード | -398{% endblock %}
+
 {% block content %}
 <h2>動画をアップロード</h2>
 <form method="post" enctype="multipart/form-data">
-    タイトル: <input type="text" name="title"><br>
-    説明: <textarea name="description"></textarea><br>
-    ファイル: <input type="file" name="video"><br>
+    <label>タイトル: <input type="text" name="title"></label><br>
+    <label>説明: <textarea name="description"></textarea></label><br>
+    <label>動画ファイル: <input type="file" name="video"></label><br>
     <input type="submit" value="アップロード">
 </form>
 {% endblock %}
