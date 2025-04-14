@@ -1,90 +1,81 @@
+from flask import Flask, render_template, request, redirect, url_for, flash
+import json
 import os
-import json  # ここでjsonをインポート
-from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
-from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
+app.secret_key = os.urandom(24)  # セッションを使うための秘密鍵
 
-# アップロード先のディレクトリ
-UPLOAD_FOLDER = 'static/uploads'
-app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
-app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MBの制限
+# 動画データを保存するファイルパス
+VIDEO_JSON_FILE = 'videos.json'
 
-# 許可するファイル拡張子
-ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
+# ユーザーのログイン状態を管理するためのセッション（仮）
+logged_in_user = None
 
-# ファイルの拡張子が許可されているか確認
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+# 動画データを読み込む関数
+def load_videos():
+    if os.path.exists(VIDEO_JSON_FILE):
+        with open(VIDEO_JSON_FILE, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    return []
 
+# トップページ（動画一覧）表示
 @app.route('/')
 def index():
-    # 動画データの読み込み（仮にjsonファイルから読み込む場合）
-    try:
-        with open('videos.json', 'r') as f:
-            videos = json.load(f)
-    except FileNotFoundError:
-        videos = []
-    
+    videos = load_videos()
     return render_template('index.html', videos=videos)
 
-@app.route('/upload', methods=['POST'])
-def upload():
-    if 'video' not in request.files:
-        flash('No file part')
-        return redirect(request.url)
+# ログインページ表示と処理
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    global logged_in_user
+    if request.method == 'POST':
+        # フォームから送信されたユーザー名とパスワードを取得
+        username = request.form['username']
+        password = request.form['password']
+        
+        # 仮の認証処理（ここで実際の認証ロジックを実装）
+        if username == 'admin' and password == 'password':
+            logged_in_user = username
+            flash('ログイン成功！')
+            return redirect(url_for('index'))
+        else:
+            flash('ユーザー名かパスワードが間違っています。')
     
-    video_file = request.files['video']
-    
-    if video_file.filename == '':
-        flash('No selected file')
-        return redirect(request.url)
+    return render_template('login.html')
 
-    if video_file and allowed_file(video_file.filename):
-        # セキュアなファイル名を取得
-        filename = secure_filename(video_file.filename)
-        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+# ログアウト処理
+@app.route('/logout')
+def logout():
+    global logged_in_user
+    logged_in_user = None
+    flash('ログアウトしました。')
+    return redirect(url_for('index'))
+
+# 動画アップロードページ（仮）
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    if request.method == 'POST':
+        # 動画ファイルのアップロード処理（仮）
+        title = request.form['title']
+        description = request.form['description']
         
-        # ファイル保存
-        video_file.save(filepath)
-        
-        # 動画メタデータの保存（仮）
-        title = request.form.get('title')
-        description = request.form.get('description')
-        
+        # 動画情報を保存（仮）
         video_data = {
             'title': title,
             'description': description,
-            'filename': filename
+            'file': 'sample_video.mp4',  # 実際にはファイルアップロード処理が必要
         }
         
-        # 動画メタデータをJSONに保存
-        try:
-            with open('videos.json', 'r') as f:
-                videos = json.load(f)
-        except FileNotFoundError:
-            videos = []
-        
+        # 動画情報をJSONファイルに追加
+        videos = load_videos()
         videos.append(video_data)
+        with open(VIDEO_JSON_FILE, 'w', encoding='utf-8') as f:
+            json.dump(videos, f, ensure_ascii=False, indent=4)
         
-        with open('videos.json', 'w') as f:
-            json.dump(videos, f)
-        
-        flash('Video successfully uploaded')
+        flash('動画がアップロードされました！')
         return redirect(url_for('index'))
-    else:
-        flash('Invalid file format')
-        return redirect(request.url)
+    
+    return render_template('upload.html')
 
-@app.errorhandler(500)
-def internal_error(error):
-    return "Internal Server Error. Please try again later.", 500
-
-if __name__ == "__main__":
-    # 静的ファイルの保存先ディレクトリを作成
-    if not os.path.exists(UPLOAD_FOLDER):
-        os.makedirs(UPLOAD_FOLDER)
-
-    # アプリケーションを起動（デバッグモード有効）
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
