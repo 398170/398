@@ -2,40 +2,34 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>-.398 動画共有サイト</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>-.398</title>
 </head>
 <body>
     <header>
-        <h1><a href="{{ url_for('index') }}">-.398</a></h1>
+        <h1><a href="{{ url_for('index') }}">-.398（トンツーサンキューハチ）</a></h1>
         <nav>
             <ul>
-                {% if session.username %}
-                    <li>ようこそ、{{ session.username }} さん</li>
-                    <li><a href="{{ url_for('upload') }}">動画を投稿</a></li>
+                {% if 'username' in session %}
+                    <li>{{ session['username'] }} さん</li>
                     <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
                 {% else %}
+                    <li><a href="{{ url_for('login') }}">ログイン</a></li>
                     <li><a href="{{ url_for('register') }}">新規登録</a></li>
                 {% endif %}
             </ul>
         </nav>
-    </header>
-
-    <main>
         {% with messages = get_flashed_messages() %}
             {% if messages %}
-                <ul class="flashes">
+                <ul>
                     {% for message in messages %}
                         <li>{{ message }}</li>
                     {% endfor %}
                 </ul>
             {% endif %}
         {% endwith %}
+    </header>
+    <main>
         {% block content %}{% endblock %}
     </main>
-
-    <footer>
-        <p>&copy; 2025 -.398 Sakkin</p>
-    </footer>
 </body>
 </html>
