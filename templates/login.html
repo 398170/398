@@ -1,12 +1,12 @@
 {% extends "layout.html" %}
 
-{% block title %}ログイン | -398{% endblock %}
-
 {% block content %}
 <h2>ログイン</h2>
-<form method="post">
-    <label>ユーザー名: <input type="text" name="username"></label><br>
-    <label>パスワード: <input type="password" name="password"></label><br>
-    <input type="submit" value="ログイン">
+<form method="post" action="/login">
+  <label>ユーザー名:</label><br>
+  <input type="text" name="username" required><br>
+  <label>パスワード:</label><br>
+  <input type="password" name="password" required><br><br>
+  <input type="submit" value="ログイン">
 </form>
 {% endblock %}
