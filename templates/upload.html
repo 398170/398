@@ -1,17 +1,13 @@
-<!-- templates/upload.html -->
 {% extends "layout.html" %}
 {% block content %}
-<h2>動画をアップロード</h2>
-<form method="POST" enctype="multipart/form-data">
+  <h1>動画アップロード</h1>
+  <form method="POST" enctype="multipart/form-data">
     <label for="title">タイトル:</label>
     <input type="text" name="title" required><br>
-
     <label for="description">説明:</label>
     <textarea name="description" required></textarea><br>
-
     <label for="video">動画ファイル:</label>
-    <input type="file" name="video" accept=".mp4,.mov,.avi" required><br>
-
-    <input type="submit" value="アップロード">
-</form>
+    <input type="file" name="video" accept="video/mp4" required><br>
+    <button type="submit">アップロード</button>
+  </form>
 {% endblock %}
