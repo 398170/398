@@ -1,32 +1,29 @@
 {% extends "layout.html" %}
-{% block title %}{{ video.title }}{% endblock %}
+
+{% block title %}{{ video.title }} | -398{% endblock %}
+
 {% block content %}
 <h2>{{ video.title }}</h2>
 <p>{{ video.description }}</p>
-<video width="640" controls>
-    <source src="{{ url_for('static', filename='hls/' + video.hls_path) }}" type="application/x-mpegURL">
-    対応していないブラウザです。
+
+<video controls width="640">
+    <source src="{{ url_for('static', filename='uploads/' + video.filename) }}" type="video/mp4">
+    対応する動画プレイヤーがありません。
 </video>
 
 <h3>コメント</h3>
 <ul>
     {% for comment in comments %}
-    <li><strong>{{ comment.user }}</strong>: {{ comment.text }}</li>
+        <li><strong>{{ comment.user }}:</strong> {{ comment.text }}</li>
     {% endfor %}
 </ul>
 
-{% if current_user.is_authenticated %}
+{% if session.get('username') %}
 <form method="post">
-    <textarea name="comment" placeholder="コメントを入力"></textarea><br>
-    <input type="submit" value="コメント投稿">
+    <textarea name="comment" placeholder="コメントを入力..."></textarea><br>
+    <input type="submit" value="投稿">
 </form>
 {% else %}
 <p><a href="{{ url_for('login') }}">ログイン</a>するとコメントできます。</p>
-{% endif %}
-
-{% if current_user.is_authenticated and current_user.is_admin %}
-    <form method="POST" action="{{ url_for('delete_video', video_id=video_id) }}">
-        <button type="submit">この動画を削除する</button>
-    </form>
 {% endif %}
 {% endblock %}
