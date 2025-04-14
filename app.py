@@ -1,66 +1,68 @@
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 import os
 import json
-from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 
 app = Flask(__name__)
+app.secret_key = 'your_secret_key'
 
-UPLOAD_FOLDER = 'static/uploads'
-THUMBNAIL_FOLDER = 'static/thumbnails'
-VIDEO_JSON = 'videos.json'
+VIDEO_DATA_FILE = 'videos.json'
+USER_DATA_FILE = 'users.json'
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
+def load_videos():
+    if not os.path.exists(VIDEO_DATA_FILE):
+        return []
+    with open(VIDEO_DATA_FILE, 'r') as f:
+        return json.load(f)
+
+def load_users():
+    if not os.path.exists(USER_DATA_FILE):
+        return {}
+    with open(USER_DATA_FILE, 'r') as f:
+        return json.load(f)
+
+def save_users(users):
+    with open(USER_DATA_FILE, 'w') as f:
+        json.dump(users, f)
 
 @app.route('/')
 def index():
-    if not os.path.exists(VIDEO_JSON):
-        with open(VIDEO_JSON, 'w') as f:
-            json.dump([], f)
-
-    with open(VIDEO_JSON, 'r') as f:
-        videos = json.load(f)
+    videos = load_videos()
     return render_template('index.html', videos=videos)
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload():
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        file = request.files['video']
-        if file:
-            filename = file.filename
-            video_path = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(video_path)
-
-            # 保存
-            video_data = {
-                'title': title,
-                'description': description,
-                'filename': filename
-            }
-
-            if os.path.exists(VIDEO_JSON):
-                with open(VIDEO_JSON, 'r') as f:
-                    videos = json.load(f)
-            else:
-                videos = []
-
-            videos.append(video_data)
-            with open(VIDEO_JSON, 'w') as f:
-                json.dump(videos, f, indent=2)
-
-            return redirect(url_for('index'))
-
-    return render_template('upload.html')
-
-@app.route('/videos/<filename>')
-def video(filename):
-    return send_from_directory(UPLOAD_FOLDER, filename)
-
-@app.route('/register')
+@app.route('/register', methods=['GET', 'POST'])
 def register():
-    return "<h1>準備中の登録ページです</h1>"
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        users = load_users()
+        if username in users:
+            flash('すでに登録されています')
+        else:
+            users[username] = password
+            save_users(users)
+            flash('登録が完了しました。ログインしてください。')
+            return redirect(url_for('login'))
+    return render_template('register.html')
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        users = load_users()
+        if username in users and users[username] == password:
+            session['username'] = username
+            flash('ログインしました')
+            return redirect(url_for('index'))
+        else:
+            flash('ユーザー名またはパスワードが違います')
+    return render_template('login.html')
+
+@app.route('/logout')
+def logout():
+    session.pop('username', None)
+    flash('ログアウトしました')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+    app.run(debug=True)
