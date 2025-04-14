@@ -1,111 +1,89 @@
 import os
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-import json
-import os
+from flask import Flask, render_template, request, redirect, url_for, jsonify, flash
+from werkzeug.utils import secure_filename
 
-# Flaskアプリケーションの設定
 app = Flask(__name__)
-app.secret_key = os.urandom(24)  # セッション管理のための秘密鍵（適切に管理）
 
-# 動画メタデータの保存場所
-VIDEO_DB = 'videos.json'
+# アップロード先のディレクトリ
+UPLOAD_FOLDER = 'static/uploads'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MBの制限
 
-# トップページ
+# 許可するファイル拡張子
+ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
+
+# ファイルの拡張子が許可されているか確認
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 @app.route('/')
 def index():
-    with open(VIDEO_DB, 'r') as f:
-        videos = json.load(f)
+    # 動画データの読み込み（仮にjsonファイルから読み込む場合）
+    try:
+        with open('videos.json', 'r') as f:
+            videos = json.load(f)
+    except FileNotFoundError:
+        videos = []
+    
     return render_template('index.html', videos=videos)
 
-# 動画詳細ページ
-@app.route('/video/<int:video_id>', methods=['GET', 'POST'])
-def view_video(video_id):
-    with open(VIDEO_DB, 'r') as f:
-        videos = json.load(f)
-
-    if video_id < 0 or video_id >= len(videos):
-        return "動画が見つかりません", 404
-
-    video = videos[video_id]
-
-    # コメントの読み込み
-    comments_file = f'comments_{video_id}.json'
-    if os.path.exists(comments_file):
-        with open(comments_file, 'r') as f:
-            comments = json.load(f)
-    else:
-        comments = []
-
-    # コメント投稿処理
-    if request.method == 'POST':
-        comment_text = request.form['comment']
-        username = session.get('username', '匿名')
-
-        comments.append({'user': username, 'text': comment_text})
-
-        with open(comments_file, 'w') as f:
-            json.dump(comments, f, indent=2)
-
-        return redirect(url_for('view_video', video_id=video_id))
-
-    return render_template('video.html', video=video, comments=comments, video_id=video_id)
-
-# ユーザー登録ページ
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        # ユーザーの登録処理（実際にはデータベースやファイルに保存）
-        return redirect(url_for('index'))
-    return render_template('register.html')
-
-# ログインページ
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        # ユーザー認証処理（実際にはデータベースやファイルで認証）
-        session['username'] = username
-        return redirect(url_for('index'))
-    return render_template('login.html')
-
-# ログアウト処理
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('index'))
-
-# 動画アップロードページ
-@app.route('/upload', methods=['GET', 'POST'])
+@app.route('/upload', methods=['POST'])
 def upload():
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        video_file = request.files['video']
-        # 動画保存処理、メタデータ保存
-        video_id = 0  # 動画IDの生成（実際にはユニークなID生成を行う）
-        video_info = {
-            'id': video_id,
+    if 'video' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    
+    video_file = request.files['video']
+    
+    if video_file.filename == '':
+        flash('No selected file')
+        return redirect(request.url)
+
+    if video_file and allowed_file(video_file.filename):
+        # セキュアなファイル名を取得
+        filename = secure_filename(video_file.filename)
+        filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        
+        # ファイル保存
+        video_file.save(filepath)
+        
+        # 動画メタデータの保存（仮）
+        title = request.form.get('title')
+        description = request.form.get('description')
+        
+        video_data = {
             'title': title,
             'description': description,
-            'filename': video_file.filename
+            'filename': filename
         }
-
-        with open(VIDEO_DB, 'r+') as f:
-            videos = json.load(f)
-            videos.append(video_info)
-            f.seek(0)
-            json.dump(videos, f, indent=2)
-
-        # 動画ファイル保存
-        video_file.save(os.path.join('static', 'uploads', video_file.filename))
-
+        
+        # 動画メタデータをJSONに保存
+        try:
+            with open('videos.json', 'r') as f:
+                videos = json.load(f)
+        except FileNotFoundError:
+            videos = []
+        
+        videos.append(video_data)
+        
+        with open('videos.json', 'w') as f:
+            json.dump(videos, f)
+        
+        flash('Video successfully uploaded')
         return redirect(url_for('index'))
-    return render_template('upload.html')
+    else:
+        flash('Invalid file format')
+        return redirect(request.url)
+
+@app.errorhandler(500)
+def internal_error(error):
+    return "Internal Server Error. Please try again later.", 500
 
 if __name__ == "__main__":
-    # Renderが提供するPORT環境変数を使ってポートを指定
-    port = int(os.environ.get("PORT", 5000))  # デフォルトで5000を使用
-    app.run(host="0.0.0.0", port=port)
+    # 静的ファイルの保存先ディレクトリを作成
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
+    # アプリケーションを起動（デバッグモード有効）
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=True)
