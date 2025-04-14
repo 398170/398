@@ -1,12 +1,21 @@
-{% extends 'layout.html' %}
-{% block content %}
-<h1>動画一覧</h1>
-<ul>
-  {% for video in videos %}
-    <li>
-      <a href="{{ url_for('video', video_id=loop.index0) }}">{{ video.title }}</a><br>
-      {{ video.description }}
-    </li>
-  {% endfor %}
-</ul>
-{% endblock %}
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>動画共有プラットフォーム</title>
+</head>
+<body>
+    <h1>動画一覧</h1>
+    <ul>
+        {% for video in videos %}
+        <li>
+            <a href="{{ url_for('video', video_id=loop.index0) }}">{{ video.title }}</a>
+        </li>
+        {% endfor %}
+    </ul>
+
+    <a href="{{ url_for('upload') }}">動画をアップロード</a><br>
+    <a href="{{ url_for('logout') }}">ログアウト</a>
+</body>
+</html>
