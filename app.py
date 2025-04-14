@@ -1,66 +1,66 @@
-from flask import Flask, render_template, request, redirect, url_for, flash
-import json
 import os
+import json
+from flask import Flask, render_template, request, redirect, url_for, send_from_directory
 
 app = Flask(__name__)
-app.secret_key = os.urandom(24)
 
-VIDEO_JSON_FILE = 'videos.json'
+UPLOAD_FOLDER = 'static/uploads'
+THUMBNAIL_FOLDER = 'static/thumbnails'
+VIDEO_JSON = 'videos.json'
 
-# 仮のログインユーザー
-logged_in_user = None
-
-# 動画データの読み込み
-def load_videos():
-    if os.path.exists(VIDEO_JSON_FILE):
-        with open(VIDEO_JSON_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    return []
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
 
 @app.route('/')
 def index():
-    videos = load_videos()
+    if not os.path.exists(VIDEO_JSON):
+        with open(VIDEO_JSON, 'w') as f:
+            json.dump([], f)
+
+    with open(VIDEO_JSON, 'r') as f:
+        videos = json.load(f)
     return render_template('index.html', videos=videos)
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    global logged_in_user
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        if username == 'admin' and password == 'password':
-            logged_in_user = username
-            flash('ログイン成功！')
-            return redirect(url_for('index'))
-        else:
-            flash('ユーザー名かパスワードが間違っています。')
-    return render_template('login.html')
-
-@app.route('/logout')
-def logout():
-    global logged_in_user
-    logged_in_user = None
-    flash('ログアウトしました。')
-    return redirect(url_for('index'))
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
     if request.method == 'POST':
         title = request.form['title']
         description = request.form['description']
-        video_data = {
-            'title': title,
-            'description': description,
-            'file': 'sample_video.mp4'
-        }
-        videos = load_videos()
-        videos.append(video_data)
-        with open(VIDEO_JSON_FILE, 'w', encoding='utf-8') as f:
-            json.dump(videos, f, ensure_ascii=False, indent=4)
-        flash('動画がアップロードされました！')
-        return redirect(url_for('index'))
+        file = request.files['video']
+        if file:
+            filename = file.filename
+            video_path = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(video_path)
+
+            # 保存
+            video_data = {
+                'title': title,
+                'description': description,
+                'filename': filename
+            }
+
+            if os.path.exists(VIDEO_JSON):
+                with open(VIDEO_JSON, 'r') as f:
+                    videos = json.load(f)
+            else:
+                videos = []
+
+            videos.append(video_data)
+            with open(VIDEO_JSON, 'w') as f:
+                json.dump(videos, f, indent=2)
+
+            return redirect(url_for('index'))
+
     return render_template('upload.html')
 
+@app.route('/videos/<filename>')
+def video(filename):
+    return send_from_directory(UPLOAD_FOLDER, filename)
+
+@app.route('/register')
+def register():
+    return "<h1>準備中の登録ページです</h1>"
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # Render.com 用ポート
-    app.run(host='0.0.0.0', port=port)
+    port = int(os.environ.get('PORT', 10000))
+    app.run(host='0.0.0.0', port=port, debug=True)
