@@ -1,37 +1,21 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>-398 動画一覧</title>
-</head>
-<body>
-    <h1>動画一覧</h1>
-
-    {% if session.username %}
-        <p>こんにちは、{{ session.username }} さん！</p>
-        <a href="{{ url_for('upload') }}">動画をアップロード</a> |
-        <a href="{{ url_for('logout') }}">ログアウト</a>
-        {% if session.is_admin %}
-            <strong>(管理者)</strong>
+{% extends "layout.html" %}
+{% block title %}トップページ{% endblock %}
+{% block content %}
+<h2>アップロードされた動画</h2>
+<ul>
+    {% for video in videos %}
+    <li>
+        <a href="{{ url_for('view_video', video_id=loop.index0) }}">
+            <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="160">
+            <strong>{{ video.title }}</strong><br>
+            {{ video.description }}
+        </a>
+        {% if current_user.is_authenticated and current_user.is_admin %}
+            <form method="POST" action="{{ url_for('delete_video', video_id=loop.index0) }}">
+                <button type="submit">動画削除</button>
+            </form>
         {% endif %}
-    {% else %}
-        <a href="{{ url_for('login') }}">ログイン</a> |
-        <a href="{{ url_for('register') }}">ユーザー登録</a>
-    {% endif %}
-
-    <ul>
-        {% for video in videos %}
-        <li>
-            <a href="{{ url_for('video', index=loop.index0) }}">
-                <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="120"><br>
-                {{ video.title }}
-            </a>
-            {% if session.is_admin %}
-                <form action="{{ url_for('delete_video', index=loop.index0) }}" method="get" style="display:inline;">
-                    <button type="submit">削除</button>
-                </form>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-</body>
-</html>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
