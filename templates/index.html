@@ -1,12 +1,16 @@
+<!-- templates/index.html -->
 {% extends "layout.html" %}
-
-{% block title %}ホーム | -398{% endblock %}
-
 {% block content %}
-<h2>動画一覧</h2>
-<ul>
+<h2>アップロードされた動画</h2>
+<div class="video-list">
     {% for video in videos %}
-        <li><a href="{{ url_for('view_video', video_id=loop.index0) }}">{{ video.title }}</a></li>
+        <div class="video-item">
+            <a href="{{ url_for('view_video', video_id=loop.index0) }}">
+                <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="320" height="180" alt="サムネイル">
+                <h3>{{ video.title }}</h3>
+            </a>
+            <p>{{ video.description }}</p>
+        </div>
     {% endfor %}
-</ul>
+</div>
 {% endblock %}
