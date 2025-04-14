@@ -15,7 +15,6 @@
                     <li><a href="{{ url_for('upload') }}">動画を投稿</a></li>
                     <li><a href="{{ url_for('logout') }}">ログアウト</a></li>
                 {% else %}
-                    <li><a href="{{ url_for('login') }}">ログイン</a></li>
                     <li><a href="{{ url_for('register') }}">新規登録</a></li>
                 {% endif %}
             </ul>
