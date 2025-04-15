@@ -1,0 +1,15 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h1>{{ video['title'] }}の類似動画</h1>
+
+<ul class="list-group">
+    {% for related_video in related_videos %}
+        <li class="list-group-item">
+            <a href="{{ url_for('video_page', video_id=related_video['id']) }}">
+                {{ related_video['title'] }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
+{% endblock %}
