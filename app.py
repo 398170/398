@@ -85,6 +85,12 @@ def video_page(video_id):
             save_videos(videos)
             flash('コメントを投稿しました！', 'success')
 
+        # いいね機能
+        if 'like' in request.form:
+            video['likes'] += 1
+            save_videos(videos)
+            flash('いいね！', 'success')
+
     return render_template('video.html', video=video, comments=comments)
 
 # 動画アップロードページ
@@ -95,6 +101,7 @@ def upload():
         title = request.form['title']
         description = request.form['description']
         video_file = request.files['video']
+        tags = request.form['tags'].split(',')
 
         if video_file and allowed_file(video_file.filename):
             filename = secure_filename(video_file.filename)
@@ -117,7 +124,10 @@ def upload():
                 'description': description,
                 'file': filename,
                 'thumbnail': f"{filename}.jpg",
-                'comments': []
+                'comments': [],
+                'likes': 0,
+                'tags': tags,
+                'playlist': []
             })
             save_videos(videos)
 
@@ -167,17 +177,21 @@ def register():
 
     return render_template('register.html')
 
-# コメント投稿
-@app.route('/comment/<int:video_id>', methods=['POST'])
-@login_required
-def comment(video_id):
+# 検索機能
+@app.route('/search', methods=['GET'])
+def search():
+    query = request.args.get('query', '')
+    videos = load_videos()
+    result = [video for video in videos if query.lower() in video['title'].lower()]
+    return render_template('search_results.html', query=query, videos=result)
+
+# 類似動画表示機能
+@app.route('/related_videos/<int:video_id>', methods=['GET'])
+def related_videos(video_id):
     videos = load_videos()
     video = videos[video_id]
-    comment = request.form['comment']
-    video['comments'].append({'username': current_user.username, 'text': comment})
-    save_videos(videos)
-    flash('コメントを投稿しました！', 'success')
-    return redirect(url_for('video_page', video_id=video_id))
+    related = [v for v in videos if any(tag in video['tags'] for tag in v['tags']) and v['id'] != video_id]
+    return render_template('related_videos.html', video=video, related_videos=related)
 
 # 動画ファイルの拡張子チェック
 def allowed_file(filename):
