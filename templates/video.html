@@ -1,27 +1,30 @@
 {% extends 'layout.html' %}
+
 {% block content %}
-<h2>{{ video.title }}</h2>
-<p>{{ video.description }}</p>
+  <h2>{{ video.title }}</h2>
+  <p>{{ video.description }}</p>
 
-<video width="640" height="360" controls>
-    <source src="{{ url_for('static', filename='hls/' + video.id + '/index.m3u8') }}" type="application/x-mpegURL">
-    お使いのブラウザは動画タグをサポートしていません。
-</video>
+  <video controls width="640">
+    <source src="{{ url_for('static', filename='hls/' ~ video.id|string ~ '/index.m3u8') }}" type="application/x-mpegURL">
+    お使いのブラウザは動画タグに対応していません。
+  </video>
 
-<hr>
-<h3>コメント</h3>
-<ul>
+  <h3>コメント</h3>
+  <ul>
     {% for comment in comments %}
-        <li><strong>{{ comment.username }}</strong>: {{ comment.text }}</li>
+      <li><strong>{{ comment.username }}:</strong> {{ comment.text }}</li>
+    {% else %}
+      <li>コメントはまだありません。</li>
     {% endfor %}
-</ul>
+  </ul>
 
-{% if 'username' in session %}
-<form method="POST" action="{{ url_for('comment', video_id=video.id) }}">
-    <textarea name="comment" required></textarea><br>
-    <input type="submit" value="コメントを投稿">
-</form>
-{% else %}
-<p>コメントを投稿するには<a href="{{ url_for('login') }}">ログイン</a>してください。</p>
-{% endif %}
+  {% if current_user.is_authenticated %}
+    <form method="POST">
+      <textarea name="comment" required placeholder="コメントを入力してください"></textarea><br>
+      <button type="submit">コメントを投稿</button>
+    </form>
+  {% else %}
+    <p><a href="{{ url_for('login') }}">ログイン</a>してコメントを投稿しましょう！</p>
+  {% endif %}
+
 {% endblock %}
