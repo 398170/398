@@ -1,15 +1,14 @@
-{% extends "layout.html" %}
-{% block title %}トップページ{% endblock %}
+{% extends 'layout.html' %}
 {% block content %}
-<h2>最新動画</h2>
-{% for video in videos %}
-    <div>
-        <a href="{{ url_for('video', video_id=video.id) }}">
-            <img src="{{ url_for('static', filename='thumbnails/' + video.id + '.jpg') }}" width="320"><br>
-            {{ video.title }}（{{ video.uploader }}）
-        </a><br>
-        タグ: {{ video.tags|join(', ') }} |
-        いいね数: {{ video.likes|length }}
-    </div>
-{% endfor %}
+<h2>動画一覧</h2>
+<ul>
+    {% for video in videos %}
+        <li>
+            <a href="{{ url_for('video_page', video_id=video.id) }}">
+                <img src="{{ url_for('static', filename='thumbnails/' + video.thumbnail) }}" width="160"><br>
+                {{ video.title }}
+            </a>
+        </li>
+    {% endfor %}
+</ul>
 {% endblock %}
