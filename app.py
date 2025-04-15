@@ -1,164 +1,146 @@
 import os
-import uuid
 import json
-import subprocess
-from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
+import ffmpeg
 
 app = Flask(__name__)
-app.secret_key = 'secret'
-app.config['UPLOAD_FOLDER'] = 'static/uploads'
-app.config['THUMBNAIL_FOLDER'] = 'static/thumbnails'
-app.config['HLS_FOLDER'] = 'static/hls'
-app.config['JSON_VIDEOS'] = 'videos.json'
-app.config['JSON_USERS'] = 'users.json'
-app.config['JSON_COMMENTS'] = 'comments.json'
 
+# セッションの秘密鍵
+app.secret_key = os.urandom(24)
+
+# アップロードファイルの設定
+UPLOAD_FOLDER = 'static/uploads'
+THUMBNAIL_FOLDER = 'static/thumbnails'
+HLS_FOLDER = 'static/hls'
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['THUMBNAIL_FOLDER'] = THUMBNAIL_FOLDER
+app.config['HLS_FOLDER'] = HLS_FOLDER
+
+# ファイル拡張子制限
+ALLOWED_EXTENSIONS = {'mp4', 'avi', 'mov', 'mkv'}
+
+# 動画のメタデータを保存するファイル
+VIDEOS_FILE = 'videos.json'
+
+# ユーザー管理用
 login_manager = LoginManager()
 login_manager.init_app(app)
 
-# ユーザーモデル
+# Userのクラス（Flask-Login用）
 class User(UserMixin):
-    def __init__(self, username):
-        self.id = username
+    def __init__(self, id, username):
+        self.id = id
+        self.username = username
 
-@login_manager.user_loader
-def load_user(user_id):
-    return User(user_id)
+# ユーザーの管理
+users = {'admin': {'password': 'admin'}}  # サンプルユーザー、実際はデータベースで管理
 
-# JSON読み書き
-def load_json(filename):
-    if os.path.exists(filename):
-        with open(filename, 'r', encoding='utf-8') as f:
+# 動画メタデータを読み込む関数
+def load_videos():
+    if os.path.exists(VIDEOS_FILE):
+        with open(VIDEOS_FILE, 'r') as f:
             return json.load(f)
     return []
 
-def save_json(filename, data):
-    with open(filename, 'w', encoding='utf-8') as f:
-        json.dump(data, f, ensure_ascii=False, indent=2)
+# 動画メタデータを保存する関数
+def save_videos(videos):
+    with open(VIDEOS_FILE, 'w') as f:
+        json.dump(videos, f)
 
-# ルートページ（動画一覧）
+# 動画のサムネイル生成関数
+def generate_thumbnail(video_path, thumbnail_path):
+    ffmpeg.input(video_path, ss=5).output(thumbnail_path, vframes=1).run()
+
+# 動画のHLS変換関数
+def convert_to_hls(video_path, video_id):
+    hls_path = os.path.join(HLS_FOLDER, video_id)
+    os.makedirs(hls_path, exist_ok=True)
+    ffmpeg.input(video_path).output(os.path.join(hls_path, 'index.m3u8'), format='hls').run()
+
+# Flask-Loginのユーザー読み込み
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id, user_id)
+
+# ホームページ（動画一覧表示）
 @app.route('/')
 def index():
-    videos = load_json(app.config['JSON_VIDEOS'])
+    videos = load_videos()
     return render_template('index.html', videos=videos)
 
-# 動画アップロード
+# 動画ページ（再生とコメント表示）
+@app.route('/video/<int:video_id>', methods=['GET', 'POST'])
+def video_page(video_id):
+    videos = load_videos()
+    video = videos[video_id]
+    comments = video.get('comments', [])
+
+    if request.method == 'POST':
+        if 'comment' in request.form:
+            comment = request.form['comment']
+            comments.append({'username': current_user.username, 'text': comment})
+            video['comments'] = comments
+            save_videos(videos)
+            flash('コメントを投稿しました！', 'success')
+
+    return render_template('video.html', video=video, comments=comments)
+
+# 動画アップロードページ
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload():
     if request.method == 'POST':
-        file = request.files['video']
         title = request.form['title']
         description = request.form['description']
-        tags = request.form['tags'].split(',')
+        video_file = request.files['video']
 
-        if file:
-            filename = secure_filename(file.filename)
-            uid = str(uuid.uuid4())
-            video_path = os.path.join(app.config['UPLOAD_FOLDER'], uid + '_' + filename)
-            file.save(video_path)
-
-            # HLS変換
-            hls_path = os.path.join(app.config['HLS_FOLDER'], uid)
-            os.makedirs(hls_path, exist_ok=True)
-            subprocess.call([
-                'ffmpeg', '-i', video_path,
-                '-codec: copy', '-start_number', '0',
-                '-hls_time', '10', '-hls_list_size', '0',
-                '-f', 'hls', os.path.join(hls_path, 'index.m3u8')
-            ])
+        if video_file and allowed_file(video_file.filename):
+            filename = secure_filename(video_file.filename)
+            video_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            video_file.save(video_path)
 
             # サムネイル生成
-            thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], uid + '.jpg')
-            subprocess.call([
-                'ffmpeg', '-i', video_path, '-ss', '00:00:01.000', '-vframes', '1', thumbnail_path
-            ])
+            thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], f"{filename}.jpg")
+            generate_thumbnail(video_path, thumbnail_path)
 
-            # メタデータ保存
-            videos = load_json(app.config['JSON_VIDEOS'])
+            # 動画をHLS形式に変換
+            video_id = len(load_videos())
+            convert_to_hls(video_path, str(video_id))
+
+            # メタデータの保存
+            videos = load_videos()
             videos.append({
-                'id': uid,
+                'id': video_id,
                 'title': title,
                 'description': description,
-                'filename': filename,
-                'uploader': current_user.id,
-                'tags': tags,
-                'likes': [],
+                'file': filename,
+                'thumbnail': f"{filename}.jpg",
+                'comments': []
             })
-            save_json(app.config['JSON_VIDEOS'], videos)
+            save_videos(videos)
 
+            flash('動画がアップロードされました！', 'success')
             return redirect(url_for('index'))
+    
     return render_template('upload.html')
 
-# 動画再生
-@app.route('/video/<video_id>')
-def video(video_id):
-    videos = load_json(app.config['JSON_VIDEOS'])
-    video = next((v for v in videos if v['id'] == video_id), None)
-    if video:
-        comments = load_json(app.config['JSON_COMMENTS'])
-        video_comments = [c for c in comments if c['video_id'] == video_id]
-        return render_template('video.html', video=video, comments=video_comments)
-    return 'Video not found', 404
-
-# コメント投稿
-@app.route('/comment/<video_id>', methods=['POST'])
-@login_required
-def comment(video_id):
-    text = request.form['comment']
-    comments = load_json(app.config['JSON_COMMENTS'])
-    comments.append({
-        'video_id': video_id,
-        'user': current_user.id,
-        'text': text
-    })
-    save_json(app.config['JSON_COMMENTS'], comments)
-    return redirect(url_for('video', video_id=video_id))
-
-# いいね機能
-@app.route('/like/<video_id>')
-@login_required
-def like(video_id):
-    videos = load_json(app.config['JSON_VIDEOS'])
-    for video in videos:
-        if video['id'] == video_id:
-            if current_user.id not in video['likes']:
-                video['likes'].append(current_user.id)
-            else:
-                video['likes'].remove(current_user.id)
-            break
-    save_json(app.config['JSON_VIDEOS'], videos)
-    return redirect(url_for('video', video_id=video_id))
-
-# ユーザー登録
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        users = load_json(app.config['JSON_USERS'])
-        if any(u['username'] == username for u in users):
-            return 'ユーザー名が既に使われています'
-        users.append({'username': username, 'password': password})
-        save_json(app.config['JSON_USERS'], users)
-        return redirect(url_for('login'))
-    return render_template('register.html')
-
-# ログイン
+# ログインページ
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
         username = request.form['username']
         password = request.form['password']
-        users = load_json(app.config['JSON_USERS'])
-        for u in users:
-            if u['username'] == username and u['password'] == password:
-                user = User(username)
-                login_user(user)
-                return redirect(url_for('index'))
-        return 'ログイン失敗'
+
+        if username in users and users[username]['password'] == password:
+            user = User(username, username)
+            login_user(user)
+            flash('ログインしました！', 'success')
+            return redirect(url_for('index'))
+
+        flash('無効なユーザー名またはパスワード', 'danger')
+
     return render_template('login.html')
 
 # ログアウト
@@ -166,9 +148,40 @@ def login():
 @login_required
 def logout():
     logout_user()
+    flash('ログアウトしました', 'success')
     return redirect(url_for('index'))
 
-# ポート指定（Render用）
+# ユーザー登録ページ
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+
+        if username not in users:
+            users[username] = {'password': password}
+            flash('ユーザー登録が完了しました！', 'success')
+            return redirect(url_for('login'))
+
+        flash('そのユーザー名はすでに使用されています', 'danger')
+
+    return render_template('register.html')
+
+# コメント投稿
+@app.route('/comment/<int:video_id>', methods=['POST'])
+@login_required
+def comment(video_id):
+    videos = load_videos()
+    video = videos[video_id]
+    comment = request.form['comment']
+    video['comments'].append({'username': current_user.username, 'text': comment})
+    save_videos(videos)
+    flash('コメントを投稿しました！', 'success')
+    return redirect(url_for('video_page', video_id=video_id))
+
+# 動画ファイルの拡張子チェック
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(debug=True, host='0.0.0.0', port=port)
+    app.run(debug=True, host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
