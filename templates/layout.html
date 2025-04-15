@@ -13,6 +13,7 @@
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% if current_user.is_authenticated %}
+                        <!-- ログインしているユーザー -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('upload') }}">動画アップロード</a>
                         </li>
@@ -20,6 +21,7 @@
                             <a class="nav-link" href="{{ url_for('logout') }}">ログアウト</a>
                         </li>
                     {% else %}
+                        <!-- ログインしていないユーザー -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('login') }}">ログイン</a>
                         </li>
