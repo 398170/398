@@ -1,0 +1,17 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>マイリスト</title>
+</head>
+<body>
+    <h1>マイリスト</h1>
+    {% for video in videos %}
+        <div>
+            <h3><a href="{{ url_for('watch_video', video_id=video.id) }}">{{ video.title }}</a></h3>
+            <p>{{ video.description }}</p>
+        </div>
+    {% endfor %}
+    <a href="{{ url_for('index') }}">戻る</a>
+</body>
+</html>
