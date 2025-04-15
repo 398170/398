@@ -1,106 +1,101 @@
-from flask import Flask, render_template, request, redirect, url_for, session
 import os
 import json
-from werkzeug.utils import secure_filename
+from flask import Flask, render_template, request, redirect, url_for, session
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-UPLOAD_FOLDER = 'static/uploads'
-THUMBNAIL_FOLDER = 'static/thumbnails'
-VIDEO_JSON = 'videos.json'
-COMMENTS_JSON = 'comments.json'
-USERS_JSON = 'users.json'
+# ファイルの読み込みと保存用関数
+def load_data(filename):
+    if os.path.exists(filename):
+        with open(filename, 'r') as f:
+            return json.load(f)
+    return {}
 
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
+def save_data(filename, data):
+    with open(filename, 'w') as f:
+        json.dump(data, f, indent=4)
 
-def load_json(path, default=[]):
-    if not os.path.exists(path):
-        with open(path, 'w') as f:
-            json.dump(default, f)
-    with open(path) as f:
-        return json.load(f)
-
-def save_json(path, data):
-    with open(path, 'w') as f:
-        json.dump(data, f, indent=2)
-
+# トップページ
 @app.route('/')
 def index():
-    videos = load_json(VIDEO_JSON)
+    videos = load_data('videos.json')
     return render_template('index.html', videos=videos)
 
-@app.route('/video/<int:video_id>', methods=['GET', 'POST'])
-def video(video_id):
-    videos = load_json(VIDEO_JSON)
-    if video_id < 0 or video_id >= len(videos):
-        return "Video not found", 404
-    video = videos[video_id]
-    comments = load_json(COMMENTS_JSON)
-    video_comments = [c for c in comments if c['video_id'] == video_id]
-    return render_template('video.html', video=video, video_id=video_id, comments=video_comments)
+# 動画詳細ページ
+@app.route('/video/<int:video_id>')
+def watch_video(video_id):
+    videos = load_data('videos.json')
+    video = videos.get(str(video_id))
+    likes = load_data('likes.json')
+    video_likes = likes.get(str(video_id), [])
+    return render_template('watch.html', video=video, likes=video_likes)
 
-@app.route('/upload', methods=['GET', 'POST'])
-def upload():
+# 動画に「いいね」を追加
+@app.route('/like/<int:video_id>', methods=['POST'])
+def like_video(video_id):
     if 'username' not in session:
         return redirect(url_for('login'))
-    if request.method == 'POST':
-        title = request.form['title']
-        description = request.form['description']
-        file = request.files['video']
-        if file:
-            filename = secure_filename(file.filename)
-            path = os.path.join(UPLOAD_FOLDER, filename)
-            file.save(path)
-            videos = load_json(VIDEO_JSON)
-            videos.append({'filename': filename, 'title': title, 'description': description})
-            save_json(VIDEO_JSON, videos)
-            return redirect(url_for('index'))
-    return render_template('upload.html')
 
-@app.route('/register', methods=['GET', 'POST'])
-def register():
-    if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        users = load_json(USERS_JSON)
-        if any(u['username'] == username for u in users):
-            return 'ユーザー名はすでに存在します'
-        users.append({'username': username, 'password': password})
-        save_json(USERS_JSON, users)
+    username = session['username']
+    likes = load_data('likes.json')
+    video_likes = likes.get(str(video_id), [])
+    if username not in video_likes:
+        video_likes.append(username)
+        likes[str(video_id)] = video_likes
+        save_data('likes.json', likes)
+
+    return redirect(url_for('watch_video', video_id=video_id))
+
+# タグ別動画一覧ページ
+@app.route('/tag/<tag>')
+def tagged_videos(tag):
+    videos = load_data('videos.json')
+    tagged = [v for v in videos.values() if tag in v.get('tags', [])]
+    return render_template('tagged.html', videos=tagged, tag=tag)
+
+# 再生リストに追加
+@app.route('/add_to_playlist/<int:video_id>', methods=['POST'])
+def add_to_playlist(video_id):
+    if 'username' not in session:
         return redirect(url_for('login'))
-    return render_template('register.html')
 
+    playlists = load_data('playlists.json')
+    user = session['username']
+
+    if user not in playlists:
+        playlists[user] = []
+
+    if video_id not in playlists[user]:
+        playlists[user].append(video_id)
+
+    save_data('playlists.json', playlists)
+    return redirect(url_for('watch_video', video_id=video_id))
+
+# ユーザーの再生リスト表示
+@app.route('/playlist')
+def view_playlist():
+    if 'username' not in session:
+        return redirect(url_for('login'))
+
+    playlists = load_data('playlists.json')
+    videos = load_data('videos.json')
+    user_videos = [videos[str(v)] for v in playlists.get(session['username'], [])]
+    return render_template('playlist.html', videos=user_videos)
+
+# ログイン
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form['username']
-        password = request.form['password']
-        users = load_json(USERS_JSON)
-        user = next((u for u in users if u['username'] == username and u['password'] == password), None)
-        if user:
-            session['username'] = username
-            return redirect(url_for('index'))
-        return 'ログイン失敗'
+        session['username'] = request.form['username']
+        return redirect(url_for('index'))
     return render_template('login.html')
 
+# ログアウト
 @app.route('/logout')
 def logout():
     session.pop('username', None)
     return redirect(url_for('index'))
 
-@app.route('/comment/<int:video_id>', methods=['POST'])
-def comment(video_id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-    text = request.form['comment']
-    comments = load_json(COMMENTS_JSON)
-    comments.append({'video_id': video_id, 'user': session['username'], 'text': text})
-    save_json(COMMENTS_JSON, comments)
-    return redirect(url_for('video', video_id=video_id))
-
-if __name__ == '__main__':
-    import os
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+if __name__ == "__main__":
+    app.run(debug=True)
