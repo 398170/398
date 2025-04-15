@@ -1,10 +1,25 @@
 {% extends 'layout.html' %}
+
 {% block content %}
-<h2>動画をアップロード</h2>
-<form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data">
-    タイトル: <input type="text" name="title" required><br>
-    説明: <textarea name="description" required></textarea><br>
-    ファイル: <input type="file" name="video" accept="video/*" required><br>
-    <input type="submit" value="アップロード">
+<h1>動画をアップロード</h1>
+
+<form action="{{ url_for('upload') }}" method="post" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label for="title" class="form-label">タイトル</label>
+        <input type="text" class="form-control" id="title" name="title" required>
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">説明</label>
+        <textarea class="form-control" id="description" name="description" rows="3" required></textarea>
+    </div>
+    <div class="mb-3">
+        <label for="tags" class="form-label">タグ（カンマ区切り）</label>
+        <input type="text" class="form-control" id="tags" name="tags" required>
+    </div>
+    <div class="mb-3">
+        <label for="video" class="form-label">動画ファイル</label>
+        <input type="file" class="form-control" id="video" name="video" accept="video/*" required>
+    </div>
+    <button type="submit" class="btn btn-primary">アップロード</button>
 </form>
 {% endblock %}
