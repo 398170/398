@@ -2,20 +2,20 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>動画共有プラットフォーム</title>
+    <title>動画一覧</title>
 </head>
 <body>
     <h1>動画一覧</h1>
-    <ul>
-        {% for video in videos %}
-        <li>
-            <a href="{{ url_for('video', video_id=loop.index0) }}">{{ video.title }}</a>
-        </li>
-        {% endfor %}
-    </ul>
-
-    <a href="{{ url_for('upload') }}">動画をアップロード</a><br>
-    <a href="{{ url_for('logout') }}">ログアウト</a>
+    {% for video in videos.values() %}
+        <div>
+            <h3><a href="{{ url_for('watch_video', video_id=video.id) }}">{{ video.title }}</a></h3>
+            <p>{{ video.description }}</p>
+            <p>タグ:
+                {% for tag in video.get('tags', []) %}
+                    <a href="{{ url_for('tagged_videos', tag=tag) }}">{{ tag }}</a>
+                {% endfor %}
+            </p>
+        </div>
+    {% endfor %}
 </body>
 </html>
