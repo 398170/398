@@ -1,0 +1,21 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h2>{{ video.title }}</h2>
+<p>{{ video.description }}</p>
+<video width="640" controls>
+    <source src="{{ url_for('hls', video_id=video.id, filename='index.m3u8') }}" type="application/vnd.apple.mpegurl">
+    お使いのブラウザは動画タグに対応していません。
+</video>
+
+<h3>コメント</h3>
+<ul>
+    {% for comment in comments %}
+    <li><strong>{{ comment.username }}:</strong> {{ comment.comment }}</li>
+    {% endfor %}
+</ul>
+
+<h4>コメントを追加</h4>
+<form method="post">
+    <label>名前: <input type="text" name="username" required></label><br>
+    <label>コメント 
