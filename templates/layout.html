@@ -10,10 +10,17 @@
     <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
         <div class="container">
             <a class="navbar-brand" href="{{ url_for('index') }}">動画共有アプリ</a>
+
+            <!-- ハンバーガーボタン（モバイル用） -->
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"
+                aria-controls="navbarNav" aria-expanded="false" aria-label="メニューを切り替え">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+
+            <!-- ナビメニュー本体 -->
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav ms-auto">
                     {% if current_user.is_authenticated %}
-                        <!-- ログインしているユーザー -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('upload') }}">動画アップロード</a>
                         </li>
@@ -21,7 +28,6 @@
                             <a class="nav-link" href="{{ url_for('logout') }}">ログアウト</a>
                         </li>
                     {% else %}
-                        <!-- ログインしていないユーザー -->
                         <li class="nav-item">
                             <a class="nav-link" href="{{ url_for('login') }}">ログイン</a>
                         </li>
@@ -29,6 +35,12 @@
                             <a class="nav-link" href="{{ url_for('register') }}">ユーザー登録</a>
                         </li>
                     {% endif %}
+                    <li class="nav-item">
+                        <form class="d-flex" action="{{ url_for('search') }}" method="get">
+                            <input class="form-control me-2" type="search" name="query" placeholder="検索" aria-label="検索">
+                            <button class="btn btn-outline-light" type="submit">検索</button>
+                        </form>
+                    </li>
                 </ul>
             </div>
         </div>
@@ -41,7 +53,7 @@
                     {% for category, message in messages %}
                         <strong>{{ category.capitalize() }}!</strong> {{ message }}
                     {% endfor %}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="閉じる"></button>
                 </div>
             {% endif %}
         {% endwith %}
