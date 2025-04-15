@@ -1,14 +1,11 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-  <h2>動画をアップロード</h2>
-  <form method="post" enctype="multipart/form-data">
-    <label>タイトル:</label><br>
-    <input type="text" name="title"><br><br>
-    <label>説明:</label><br>
-    <textarea name="description"></textarea><br><br>
-    <label>動画ファイル:</label><br>
-    <input type="file" name="video"><br><br>
-    <input type="submit" value="アップロード">
-  </form>
+<h2>動画をアップロード</h2>
+<form method="post" enctype="multipart/form-data">
+    <label>タイトル: <input type="text" name="title" required></label><br>
+    <label>説明: <textarea name="description" required></textarea></label><br>
+    <label>動画ファイル: <input type="file" name="video" accept="video/*" required></label><br>
+    <button type="submit">アップロード</button>
+</form>
 {% endblock %}
