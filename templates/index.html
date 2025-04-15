@@ -1,24 +1,25 @@
 {% extends 'layout.html' %}
 
 {% block content %}
-  <h1>動画一覧</h1>
+<h1>動画一覧</h1>
 
-  {% if current_user.is_authenticated %}
-    <a href="{{ url_for('upload') }}" class="btn btn-primary">動画をアップロード</a>
-  {% else %}
-    <p><a href="{{ url_for('login') }}">ログイン</a>して動画をアップロード</p>
-  {% endif %}
+<form action="{{ url_for('search') }}" method="get" class="mb-4">
+    <input type="text" name="query" placeholder="検索..." class="form-control w-50 d-inline">
+    <button type="submit" class="btn btn-primary">検索</button>
+</form>
 
-  <hr>
-
-  {% for video in videos %}
-    <div>
-      <a href="{{ url_for('video_page', video_id=video.id) }}">
-        <img src="{{ url_for('static', filename='thumbnails/' ~ video.thumbnail) }}" width="200"><br>
-        <strong>{{ video.title }}</strong>
-      </a>
-      <p>{{ video.description }}</p>
-    </div>
-    <hr>
-  {% endfor %}
+<div class="row">
+    {% for video in videos %}
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <img src="{{ url_for('static', filename='thumbnails/' + video['thumbnail']) }}" class="card-img-top" alt="サムネイル">
+                <div class="card-body">
+                    <h5 class="card-title">{{ video['title'] }}</h5>
+                    <p class="card-text">{{ video['description'] }}</p>
+                    <a href="{{ url_for('video_page', video_id=video['id']) }}" class="btn btn-primary">動画を見る</a>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
 {% endblock %}
