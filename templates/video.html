@@ -1,21 +1,32 @@
-{% extends 'layout.html' %}
-
+{% extends "layout.html" %}
+{% block title %}{{ video.title }}{% endblock %}
 {% block content %}
 <h2>{{ video.title }}</h2>
 <p>{{ video.description }}</p>
-<video width="640" controls>
-    <source src="{{ url_for('hls', video_id=video.id, filename='index.m3u8') }}" type="application/vnd.apple.mpegurl">
-    お使いのブラウザは動画タグに対応していません。
-</video>
+<p>投稿者: {{ video.uploader }}</p>
+<p>タグ: {{ video.tags|join(', ') }}</p>
+<p>
+    <video width="640" controls>
+        <source src="{{ url_for('static', filename='hls/' + video.id + '/index.m3u8') }}" type="application/x-mpegURL">
+        サポートされていないブラウザです。
+    </video>
+</p>
+
+<form action="{{ url_for('like', video_id=video.id) }}" method="get">
+    <button type="submit">いいね（{{ video.likes|length }}）</button>
+</form>
 
 <h3>コメント</h3>
-<ul>
-    {% for comment in comments %}
-    <li><strong>{{ comment.username }}:</strong> {{ comment.comment }}</li>
-    {% endfor %}
-</ul>
+{% for comment in comments %}
+    <div><strong>{{ comment.user }}</strong>: {{ comment.text }}</div>
+{% endfor %}
 
-<h4>コメントを追加</h4>
-<form method="post">
-    <label>名前: <input type="text" name="username" required></label><br>
-    <label>コメント 
+{% if current_user.is_authenticated %}
+<form method="post" action="{{ url_for('comment', video_id=video.id) }}">
+    <textarea name="comment" placeholder="コメントを書く" required></textarea><br>
+    <button type="submit">投稿</button>
+</form>
+{% else %}
+<p><a href="{{ url_for('login') }}">ログイン</a>してコメントしよう！</p>
+{% endif %}
+{% endblock %}
