@@ -1,4 +1,4 @@
 Flask
 Flask-Login
-Flask-WTF
 gunicorn
+ffmpeg-python
