@@ -1,101 +1,107 @@
 import os
 import json
-from flask import Flask, render_template, request, redirect, url_for, session
+import uuid
+import subprocess
+from flask import Flask, render_template, request, redirect, url_for, session, send_from_directory
 
 app = Flask(__name__)
 app.secret_key = 'your_secret_key'
 
-# ファイルの読み込みと保存用関数
-def load_data(filename):
-    if os.path.exists(filename):
-        with open(filename, 'r') as f:
-            return json.load(f)
-    return {}
+UPLOAD_FOLDER = 'static/uploads'
+THUMBNAIL_FOLDER = 'static/thumbnails'
+HLS_FOLDER = 'static/hls'
+VIDEOS_JSON = 'videos.json'
+COMMENTS_JSON = 'comments.json'
 
-def save_data(filename, data):
-    with open(filename, 'w') as f:
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(THUMBNAIL_FOLDER, exist_ok=True)
+os.makedirs(HLS_FOLDER, exist_ok=True)
+
+def load_json(file_path):
+    if os.path.exists(file_path):
+        with open(file_path, 'r') as f:
+            return json.load(f)
+    return []
+
+def save_json(data, file_path):
+    with open(file_path, 'w') as f:
         json.dump(data, f, indent=4)
 
-# トップページ
 @app.route('/')
 def index():
-    videos = load_data('videos.json')
+    videos = load_json(VIDEOS_JSON)
     return render_template('index.html', videos=videos)
 
-# 動画詳細ページ
-@app.route('/video/<int:video_id>')
-def watch_video(video_id):
-    videos = load_data('videos.json')
-    video = videos.get(str(video_id))
-    likes = load_data('likes.json')
-    video_likes = likes.get(str(video_id), [])
-    return render_template('watch.html', video=video, likes=video_likes)
-
-# 動画に「いいね」を追加
-@app.route('/like/<int:video_id>', methods=['POST'])
-def like_video(video_id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    username = session['username']
-    likes = load_data('likes.json')
-    video_likes = likes.get(str(video_id), [])
-    if username not in video_likes:
-        video_likes.append(username)
-        likes[str(video_id)] = video_likes
-        save_data('likes.json', likes)
-
-    return redirect(url_for('watch_video', video_id=video_id))
-
-# タグ別動画一覧ページ
-@app.route('/tag/<tag>')
-def tagged_videos(tag):
-    videos = load_data('videos.json')
-    tagged = [v for v in videos.values() if tag in v.get('tags', [])]
-    return render_template('tagged.html', videos=tagged, tag=tag)
-
-# 再生リストに追加
-@app.route('/add_to_playlist/<int:video_id>', methods=['POST'])
-def add_to_playlist(video_id):
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    playlists = load_data('playlists.json')
-    user = session['username']
-
-    if user not in playlists:
-        playlists[user] = []
-
-    if video_id not in playlists[user]:
-        playlists[user].append(video_id)
-
-    save_data('playlists.json', playlists)
-    return redirect(url_for('watch_video', video_id=video_id))
-
-# ユーザーの再生リスト表示
-@app.route('/playlist')
-def view_playlist():
-    if 'username' not in session:
-        return redirect(url_for('login'))
-
-    playlists = load_data('playlists.json')
-    videos = load_data('videos.json')
-    user_videos = [videos[str(v)] for v in playlists.get(session['username'], [])]
-    return render_template('playlist.html', videos=user_videos)
-
-# ログイン
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
     if request.method == 'POST':
-        session['username'] = request.form['username']
-        return redirect(url_for('index'))
-    return render_template('login.html')
+        title = request.form['title']
+        description = request.form['description']
+        file = request.files['video']
+        if file:
+            video_id = str(uuid.uuid4())
+            filename = f"{video_id}.mp4"
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
+            file.save(filepath)
 
-# ログアウト
-@app.route('/logout')
-def logout():
-    session.pop('username', None)
-    return redirect(url_for('index'))
+            # サムネイル生成
+            thumbnail_path = os.path.join(THUMBNAIL_FOLDER, f"{video_id}.jpg")
+            subprocess.run(['ffmpeg', '-i', filepath, '-ss', '00:00:01.000', '-vframes', '1', thumbnail_path])
 
-if __name__ == "__main__":
-    app.run(debug=True)
+            # HLS変換
+            hls_path = os.path.join(HLS_FOLDER, video_id)
+            os.makedirs(hls_path, exist_ok=True)
+            subprocess.run([
+                'ffmpeg', '-i', filepath,
+                '-codec: copy', '-start_number', '0',
+                '-hls_time', '10', '-hls_list_size', '0',
+                '-f', 'hls', os.path.join(hls_path, 'index.m3u8')
+            ])
+
+            videos = load_json(VIDEOS_JSON)
+            videos.append({
+                'id': video_id,
+                'title': title,
+                'description': description,
+                'filename': filename
+            })
+            save_json(videos, VIDEOS_JSON)
+
+            return redirect(url_for('index'))
+    return render_template('upload.html')
+
+@app.route('/video/<video_id>', methods=['GET', 'POST'])
+def video(video_id):
+    videos = load_json(VIDEOS_JSON)
+    video = next((v for v in videos if v['id'] == video_id), None)
+    if not video:
+        return "Video not found", 404
+
+    comments = load_json(COMMENTS_JSON)
+    video_comments = [c for c in comments if c['video_id'] == video_id]
+
+    if request.method == 'POST':
+        username = request.form['username']
+        comment_text = request.form['comment']
+        comments.append({
+            'video_id': video_id,
+            'username': username,
+            'comment': comment_text
+        })
+        save_json(comments, COMMENTS_JSON)
+        return redirect(url_for('video', video_id=video_id))
+
+    return render_template('video.html', video=video, comments=video_comments)
+
+@app.route('/thumbnails/<filename>')
+def thumbnail(filename):
+    return send_from_directory(THUMBNAIL_FOLDER, filename)
+
+@app.route('/hls/<video_id>/<filename>')
+def hls(video_id, filename):
+    return send_from_directory(os.path.join(HLS_FOLDER, video_id), filename)
+
+# Render用：PORT環境変数を使って起動
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host='0.0.0.0', port=port)
