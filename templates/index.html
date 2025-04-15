@@ -1,21 +1,15 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>動画一覧</title>
-</head>
-<body>
-    <h1>動画一覧</h1>
-    {% for video in videos.values() %}
-        <div>
-            <h3><a href="{{ url_for('watch_video', video_id=video.id) }}">{{ video.title }}</a></h3>
-            <p>{{ video.description }}</p>
-            <p>タグ:
-                {% for tag in video.get('tags', []) %}
-                    <a href="{{ url_for('tagged_videos', tag=tag) }}">{{ tag }}</a>
-                {% endfor %}
-            </p>
-        </div>
+{% extends 'layout.html' %}
+
+{% block content %}
+<h2>アップロードされた動画</h2>
+<ul>
+    {% for video in videos %}
+    <li>
+        <a href="{{ url_for('video', video_id=video.id) }}">
+            <img src="{{ url_for('thumbnail', filename=video.id + '.jpg') }}" alt="サムネイル" width="120">
+            {{ video.title }}
+        </a>
+    </li>
     {% endfor %}
-</body>
-</html>
+</ul>
+{% endblock %}
