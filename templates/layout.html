@@ -1,19 +1,13 @@
-<!doctype html>
-<html>
+<!DOCTYPE html>
+<html lang="ja">
 <head>
-    <title>動画共有サイト</title>
+    <meta charset="UTF-8">
+    <title>動画共有アプリ</title>
 </head>
 <body>
+    <h1><a href="{{ url_for('index') }}">動画共有アプリ</a></h1>
     <nav>
-        <a href="{{ url_for('index') }}">トップ</a>
-        {% if 'username' in session %}
-            <a href="{{ url_for('upload') }}">アップロード</a>
-            <span>{{ session['username'] }}さん</span>
-            <a href="{{ url_for('logout') }}">ログアウト</a>
-        {% else %}
-            <a href="{{ url_for('login') }}">ログイン</a>
-            <a href="{{ url_for('register') }}">新規登録</a>
-        {% endif %}
+        <a href="{{ url_for('upload') }}">動画をアップロード</a>
     </nav>
     <hr>
     {% block content %}{% endblock %}
