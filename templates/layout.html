@@ -2,14 +2,23 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>動画共有アプリ</title>
+    <title>{% block title %}-398 動画サイト{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.simplecss.org/simple.min.css">
 </head>
 <body>
-    <h1><a href="{{ url_for('index') }}">動画共有アプリ</a></h1>
-    <nav>
-        <a href="{{ url_for('upload') }}">動画をアップロード</a>
-    </nav>
-    <hr>
-    {% block content %}{% endblock %}
+    <header>
+        <h1><a href="{{ url_for('index') }}">-398 動画サイト</a></h1>
+        {% if current_user.is_authenticated %}
+            ようこそ、{{ current_user.id }}さん |
+            <a href="{{ url_for('upload') }}">動画投稿</a> |
+            <a href="{{ url_for('logout') }}">ログアウト</a>
+        {% else %}
+            <a href="{{ url_for('login') }}">ログイン</a> /
+            <a href="{{ url_for('register') }}">新規登録</a>
+        {% endif %}
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
 </body>
 </html>
