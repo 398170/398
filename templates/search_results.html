@@ -1,0 +1,24 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<h1>検索結果: "{{ query }}"</h1>
+
+<div class="row">
+    {% if videos %}
+        {% for video in videos %}
+            <div class="col-md-4 mb-4">
+                <div class="card">
+                    <img src="{{ url_for('static', filename='thumbnails/' + video['thumbnail']) }}" class="card-img-top" alt="サムネイル">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ video['title'] }}</h5>
+                        <p class="card-text">{{ video['description'] }}</p>
+                        <a href="{{ url_for('video_page', video_id=video['id']) }}" class="btn btn-primary">動画を見る</a>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% else %}
+        <p>検索結果が見つかりませんでした。</p>
+    {% endif %}
+</div>
+{% endblock %}
