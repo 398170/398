@@ -1,31 +1,21 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!doctype html>
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>-.398</title>
+    <title>動画共有サイト</title>
 </head>
 <body>
     <nav>
-        <a href="{{ url_for('index') }}">ホーム</a>
+        <a href="{{ url_for('index') }}">トップ</a>
         {% if 'username' in session %}
-            <span>ようこそ、{{ session['username'] }} さん</span>
             <a href="{{ url_for('upload') }}">アップロード</a>
+            <span>{{ session['username'] }}さん</span>
             <a href="{{ url_for('logout') }}">ログアウト</a>
         {% else %}
             <a href="{{ url_for('login') }}">ログイン</a>
-            <a href="{{ url_for('register') }}">登録</a>
+            <a href="{{ url_for('register') }}">新規登録</a>
         {% endif %}
     </nav>
     <hr>
-    {% with messages = get_flashed_messages() %}
-      {% if messages %}
-        <ul>
-        {% for message in messages %}
-          <li>{{ message }}</li>
-        {% endfor %}
-        </ul>
-      {% endif %}
-    {% endwith %}
     {% block content %}{% endblock %}
 </body>
 </html>
