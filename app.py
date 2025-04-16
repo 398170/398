@@ -3,7 +3,7 @@ import json
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
-import ffmpeg  # ← ffmpeg-python ライブラリ
+import ffmpeg  # ffmpeg-python
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
@@ -40,7 +40,7 @@ def save_videos(videos):
     with open(VIDEOS_FILE, 'w') as f:
         json.dump(videos, f)
 
-# ★ 修正: 安定した thumbnail 生成 + エラー表示
+# サムネイル生成
 def generate_thumbnail(video_path, thumbnail_path):
     try:
         (
@@ -53,11 +53,24 @@ def generate_thumbnail(video_path, thumbnail_path):
         print("FFmpeg Error:", e.stderr.decode())
         raise RuntimeError("サムネイル生成に失敗しました。")
 
-# HLS変換
+# HLS変換（動画の最初が切れないように改善）
 def convert_to_hls(video_path, video_id):
     hls_path = os.path.join(HLS_FOLDER, video_id)
     os.makedirs(hls_path, exist_ok=True)
-    ffmpeg.input(video_path).output(os.path.join(hls_path, 'index.m3u8'), format='hls').run()
+
+    (
+        ffmpeg
+        .input(video_path)
+        .output(
+            os.path.join(hls_path, 'index.m3u8'),
+            format='hls',
+            start_number=0,
+            hls_time=4,
+            hls_list_size=0,
+            hls_segment_filename=os.path.join(hls_path, 'segment_%03d.ts')
+        )
+        .run(capture_stdout=True, capture_stderr=True)
+    )
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -106,7 +119,6 @@ def upload():
             thumbnail_path = os.path.join(app.config['THUMBNAIL_FOLDER'], f"{filename}.jpg")
             video_id = str(len(load_videos()))
 
-            # ★ 修正: エラーハンドリング付き
             try:
                 generate_thumbnail(video_path, thumbnail_path)
                 convert_to_hls(video_path, video_id)
